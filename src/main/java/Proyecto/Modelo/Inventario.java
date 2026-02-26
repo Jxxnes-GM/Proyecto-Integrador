@@ -1,4 +1,4 @@
-package Proyecto;
+package Proyecto.Modelo;
 
 public class Inventario {
     
