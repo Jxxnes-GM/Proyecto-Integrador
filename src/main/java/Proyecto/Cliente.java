@@ -1,4 +1,4 @@
-package com.example;
+package Proyecto;
 
 public class Cliente {
     
