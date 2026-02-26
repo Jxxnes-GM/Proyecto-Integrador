@@ -55,6 +55,18 @@ public class Detalle_Venta {
     public double getSubtotal() {
         return subtotal;
     }
+// Metodos
+    // Metodo para calcular el subtotal
+    private void calcularSubtotal() {
+    this.subtotal = cantidad * precio_unitario;
+}
 
+
+    
+
+    // Metodo calcular descuento
+    public double calcularDescuento(double porcentaje) {
+        return subtotal - (subtotal * porcentaje / 100);
+    }
     
 }
