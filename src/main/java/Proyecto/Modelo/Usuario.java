@@ -3,22 +3,17 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Usuario {
+public class Usuario extends Persona {
     // Atributos
-    private int id;
-    private String nombre;
-    private String apellido;
-    private String correo;
+    private int idUsuario; 
     private String contrasena;
     private String rol; // Administrador o Cliente
 
 
     // Constructor
-    public Usuario(int id, String nombre, String apellido, String correo, String contrasena, String rol) {
-        this.id = id; 
-        this.nombre = nombre; 
-        this.apellido = apellido; 
-        this.correo = correo; 
+    public Usuario(int idUsuario, String nombre, String apellido, String correo, String contrasena, String rol) {
+        super(nombre, apellido, correo); // Llamada al constructor de la clase padre
+        this.idUsuario = idUsuario;
         this.contrasena = contrasena; 
         this.rol = rol;
     }
@@ -26,8 +21,8 @@ public class Usuario {
     
 
     // Getters y Setters
-    public int getId() { return id; } 
-    public void setId(int id) { this.id = id; }
+    public int getIdUsuario() { return idUsuario; } 
+    public void setIdUsuario(int idUsuario) { this.idUsuario = idUsuario; }
 
     public String getNombre() { return nombre; } 
     public void setNombre(String nombre) { this.nombre = nombre; }
@@ -46,7 +41,7 @@ public class Usuario {
 
     
     public String toString() {
-        return "Usuario{id="+id+", nombre='"+nombre+"', apellido='"+apellido+"', correo='"+correo+"', rol='"+rol+"'}";
+        return "Usuario{id="+idUsuario+", nombre='"+nombre+"', apellido='"+apellido+"', correo='"+correo+"', rol='"+rol+"'}";
     }
 
 }
