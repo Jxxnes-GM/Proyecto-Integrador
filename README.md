@@ -1,6 +1,7 @@
 # Proyecto Integrador - Programación II
 
 ## Descripción
+
 Sistema de gestión de ventas e inventario desarrollado en Java con patrón MVC (Modelo-Vista-Controlador).
 
 ## Diagrama UML
@@ -188,9 +189,11 @@ src/
 ```
 
 ## Tecnologías Utilizadas
+
 - Java
 - Maven
 - Patrón MVC
 
 ## Autor
+
 Juanes
