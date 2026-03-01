@@ -1,76 +1,72 @@
 package Proyecto.Modelo;
 
-import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-
 public class Empleado extends Persona {
     // Atributos
-    private int idUsuarioEmpleado;
-    private String contrasena;
-    private String rol; // Vendedor En Linea o Vendedor En Tienda
+    private String codigoEmpleado;
+    private Cargo cargo;
+    private Double salario;
+    private Boolean estado; // activo, inactivo, etc.
+    private String password;
 
     // Constructor
-    public Empleado(int idUsuarioEmpleado, String nombre, String apellido, String correo, String contrasena,
-            String rol) {
-        super(nombre, apellido, correo); // Llamada al constructor de la clase padre
-        this.idUsuarioEmpleado = idUsuarioEmpleado;
-        this.contrasena = contrasena;
-        this.rol = rol;
+    public Empleado() {
+        super(); // Llamada al constructor de la clase padre Persona
+    }
+
+    // Constructor con parámetros
+    public Empleado(int id, String nombre, String apellido, String correo, String telefono, String codigoEmpleado,
+            Cargo cargo, Double salario, Boolean estado, String password) {
+        super.nombre = nombre;
+        super.apellido = apellido;
+        super.correo = correo;
+        super.id = id;
+        super.telefono = telefono;
+        this.codigoEmpleado = codigoEmpleado;
+        this.cargo = cargo;
+        this.salario = salario;
+        this.estado = estado;
+        this.password = password;
     }
 
     // Getters y Setters
-    public int getIdUsuarioEmpleado() {
-        return idUsuarioEmpleado;
+    public String getCodigoEmpleado() {
+        return codigoEmpleado;
     }
 
-    public void setIdUsuarioEmpleado(int idUsuarioEmpleado) {
-        this.idUsuarioEmpleado = idUsuarioEmpleado;
+    public void setCodigoEmpleado(String codigoEmpleado) {
+        this.codigoEmpleado = codigoEmpleado;
     }
 
-    public String getNombre() {
-        return nombre;
+    public Cargo getCargo() {
+        return cargo;
     }
 
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
+    public void setCargo(Cargo cargo) {
+        this.cargo = cargo;
     }
 
-    public String getApellido() {
-        return apellido;
+    public Double getSalario() {
+        return salario;
     }
 
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
+    public void setSalario(Double salario) {
+        this.salario = salario;
     }
 
-    public String getCorreo() {
-        return correo;
+    public Boolean getEstado() {
+        return estado;
     }
 
-    public void setCorreo(String correo) {
-        this.correo = correo;
+    public void setEstado(Boolean estado) {
+        this.estado = estado;
     }
 
-    public String getContrasena() {
-        return contrasena;
+    public String getPassword() {
+        return password;
     }
 
-    public void setContrasena(String contrasena) {
-        this.contrasena = contrasena;
-    }
-
-    public String getRol() {
-        return rol;
-    }
-
-    public void setRol(String rol) {
-        this.rol = rol;
-    }
-
-    public String toString() {
-        return "Empleado{id=" + idUsuarioEmpleado + ", nombre='" + nombre + "', apellido='" + apellido + "', correo='"
-                + correo + "', rol='" + rol + "'}";
+    public void setPassword(String password) {
+        this.password = password;
     }
 
 }

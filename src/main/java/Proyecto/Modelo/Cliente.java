@@ -2,46 +2,49 @@ package Proyecto.Modelo;
 
 public class Cliente extends Persona {
     // Atributos
-    private int idCliente;
-    private String contrasena;
-    private String estado; // activo, inactivo, etc.
+    private String direccion;
+    private String password;
+    private Boolean estado; // activo, inactivo, etc.
 
     // Constructor
     public Cliente() {
         super(); // Llamada al constructor de la clase padre Persona
     }
 
-    public Cliente(int idCliente, String nombre, String apellido, String correo, String contrasena, String estado) {
+    // Constructor con parámetros
+    public Cliente(int id, String nombre, String apellido, String correo, String password, String direccion,
+            Boolean estado) {
         super.nombre = nombre;
         super.apellido = apellido;
         super.correo = correo;
-        this.idCliente = idCliente;
-        this.contrasena = contrasena;
+        super.id = id;
+        this.password = password;
+        this.direccion = direccion;
         this.estado = estado;
     }
 
     // Getters y Setters
-    public int getIdCliente() {
-        return idCliente;
+    public String getPassword() {
+        return password;
     }
 
-    public void setIdCliente(int idCliente) {
-        this.idCliente = idCliente;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public String getContrasena() {
-        return contrasena;
+    public String getDireccion() {
+        return direccion;
     }
 
-    public void setContrasena(String contrasena) {
-        this.contrasena = contrasena;
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
     }
 
-    public String getEstado() {
+    public Boolean getEstado() {
         return estado;
     }
 
-    public void setEstado(String estado) {
+    public void setEstado(Boolean estado) {
         this.estado = estado;
     }
 
