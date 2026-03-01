@@ -11,11 +11,12 @@ public class Detalle_Venta {
     public double subtotal;
 
     // Constructor vacio
-    public Detalle_Venta (){
+    public Detalle_Venta() {
 
     }
 
-    public Detalle_Venta(int id_detalle, Venta venta, Producto idProducto, int cantidad, double precio_unitario, double subtotal) {
+    public Detalle_Venta(int id_detalle, Venta venta, Producto idProducto, int cantidad, double precio_unitario,
+            double subtotal) {
         this.id_detalle = id_detalle;
         this.venta = venta;
         this.idProducto = idProducto;
@@ -25,20 +26,34 @@ public class Detalle_Venta {
     }
 
     // Getters y Setters
-    public int getId_detalle() {return id_detalle;}
-    public void setId_detalle(int id_detalle) {this.id_detalle = id_detalle;}
+    public int getId_detalle() {
+        return id_detalle;
+    }
 
-    public Venta getVenta() {return venta;}
-    public void setVenta(Venta venta) {this.venta = venta;}
+    public void setId_detalle(int id_detalle) {
+        this.id_detalle = id_detalle;
+    }
 
-    public Producto getidProducto() {return idProducto;}
-    public void setProducto(Producto idProducto) {
+    public Venta getVenta() {
+        return venta;
+    }
+
+    public void setVenta(Venta venta) {
+        this.venta = venta;
+    }
+
+    public Producto getIdProducto() {
+        return idProducto;
+    }
+
+    public void setIdProducto(Producto idProducto) {
         this.idProducto = idProducto;
     }
 
     public int getCantidad() {
         return cantidad;
     }
+
     public void setCantidad(int cantidad) {
         this.cantidad = cantidad;
         calcularSubtotal();
@@ -47,6 +62,7 @@ public class Detalle_Venta {
     public double getPrecio_unitario() {
         return precio_unitario;
     }
+
     public void setPrecio_unitario(double precio_unitario) {
         this.precio_unitario = precio_unitario;
         calcularSubtotal();
@@ -55,18 +71,11 @@ public class Detalle_Venta {
     public double getSubtotal() {
         return subtotal;
     }
-// Metodos
+
+    // Metodos
     // Metodo para calcular el subtotal
     private void calcularSubtotal() {
-    this.subtotal = cantidad * precio_unitario;
-}
-
-
-    
-
-    // Metodo calcular descuento
-    public double calcularDescuento(double porcentaje) {
-        return subtotal - (subtotal * porcentaje / 100);
+        this.subtotal = cantidad * precio_unitario;
     }
-    
+
 }

@@ -1,23 +1,39 @@
 package Proyecto.Modelo;
 
-public class Almacenista extends Persona {
-    private int idAlmacenista;
+public class Proveedor extends Persona {
+    // Atributos
+    private String direccion;
+    private Boolean estado; // activo, inactivo, etc.
 
-    public Almacenista() {
-        super("", "", ""); // Llamada al constructor de la clase padre con valores vacíos
+    // Constructor
+    public Proveedor() {
     }
 
-    public Almacenista(int idAlmacenista, String nombre, String apellido, String correo) {
-        super(nombre, apellido, correo); // Llamada al constructor de la clase padre que es Persona
-        this.idAlmacenista = idAlmacenista;
+    // Constructor con parámetros
+    public Proveedor(int id, String nombre, String apellido, String correo, String direccion, Boolean estado) {
+        super.nombre = nombre;
+        super.apellido = apellido;
+        super.correo = correo;
+        super.id = id;
+        this.direccion = direccion;
+        this.estado = estado;
     }
 
-    public int getIdAlmacenista() {
-        return idAlmacenista;
+    // Getters y Setters
+    public String getDireccion() {
+        return direccion;
     }
 
-    public void setIdAlmacenista(int idAlmacenista) {
-        this.idAlmacenista = idAlmacenista;
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
+    }
+
+    public Boolean getEstado() {
+        return estado;
+    }
+
+    public void setEstado(Boolean estado) {
+        this.estado = estado;
     }
 
 }
