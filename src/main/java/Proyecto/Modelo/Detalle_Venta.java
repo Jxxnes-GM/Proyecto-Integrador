@@ -5,9 +5,9 @@ public class Detalle_Venta {
     // Atributos
     public int id_detalle;
     public Venta venta;
-    public Producto idProducto;
+    public Producto producto;
     public int cantidad;
-    public double precio_unitario;
+    public double precioUnitario;
     public double subtotal;
 
     // Constructor vacio
@@ -15,13 +15,13 @@ public class Detalle_Venta {
 
     }
 
-    public Detalle_Venta(int id_detalle, Venta venta, Producto idProducto, int cantidad, double precio_unitario,
+    public Detalle_Venta(int id_detalle, Venta venta, Producto producto, int cantidad, double precioUnitario,
             double subtotal) {
         this.id_detalle = id_detalle;
         this.venta = venta;
-        this.idProducto = idProducto;
+        this.producto = producto;
         this.cantidad = cantidad;
-        this.precio_unitario = precio_unitario;
+        this.precioUnitario = precioUnitario;
         this.subtotal = subtotal;
     }
 
@@ -42,12 +42,12 @@ public class Detalle_Venta {
         this.venta = venta;
     }
 
-    public Producto getIdProducto() {
-        return idProducto;
+    public Producto getProducto() {
+        return producto;
     }
 
-    public void setIdProducto(Producto idProducto) {
-        this.idProducto = idProducto;
+    public void setProducto(Producto producto) {
+        this.producto = producto;
     }
 
     public int getCantidad() {
@@ -59,12 +59,12 @@ public class Detalle_Venta {
         calcularSubtotal();
     }
 
-    public double getPrecio_unitario() {
-        return precio_unitario;
+    public double getPrecioUnitario() {
+        return precioUnitario;
     }
 
-    public void setPrecio_unitario(double precio_unitario) {
-        this.precio_unitario = precio_unitario;
+    public void setPrecioUnitario(double precioUnitario) {
+        this.precioUnitario = precioUnitario;
         calcularSubtotal();
     }
 
@@ -75,7 +75,7 @@ public class Detalle_Venta {
     // Metodos
     // Metodo para calcular el subtotal
     private void calcularSubtotal() {
-        this.subtotal = cantidad * precio_unitario;
+        this.subtotal = cantidad * precioUnitario;
     }
 
 }
