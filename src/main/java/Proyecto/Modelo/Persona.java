@@ -3,7 +3,7 @@ package Proyecto.Modelo;
 public class Persona {
 
     // Creamos los atributos de la clase persona que se van a heredar a las clases
-    // usuario, cliente y almacenista
+    // usuario, cliente y proveedor
     public int id;
     public String nombre;
     public String apellido;
