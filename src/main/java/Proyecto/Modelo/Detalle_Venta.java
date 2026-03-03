@@ -15,8 +15,8 @@ public class Detalle_Venta {
 
     }
 
-    public Detalle_Venta(int id_detalle, Venta venta, Producto producto, int cantidad, double precioUnitario,
-            double subtotal) {
+  // Constructor con parametros
+    public Detalle_Venta(int id_detalle, Venta venta, Producto producto, int cantidad, double precioUnitario, double subtotal) {
         this.id_detalle = id_detalle;
         this.venta = venta;
         this.producto = producto;
@@ -48,6 +48,14 @@ public class Detalle_Venta {
 
     public void setProducto(Producto producto) {
         this.producto = producto;
+
+    public Producto getIdProducto() {
+        return idProducto;
+    }
+
+    public void setIdProducto(Producto idProducto) {
+        this.idProducto = idProducto;
+
     }
 
     public int getCantidad() {
@@ -63,8 +71,13 @@ public class Detalle_Venta {
         return precioUnitario;
     }
 
+
     public void setPrecioUnitario(double precioUnitario) {
         this.precioUnitario = precioUnitario;
+
+    public void setPrecio_unitario(double precio_unitario) {
+        this.precio_unitario = precio_unitario;
+
         calcularSubtotal();
     }
 
@@ -75,7 +88,11 @@ public class Detalle_Venta {
     // Metodos
     // Metodo para calcular el subtotal
     private void calcularSubtotal() {
+
         this.subtotal = cantidad * precioUnitario;
+
+        this.subtotal = cantidad * precio_unitario;
+
     }
 
 }
