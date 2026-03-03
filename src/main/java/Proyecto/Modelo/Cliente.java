@@ -10,6 +10,7 @@ public class Cliente extends Persona {
     private Boolean estado; // activo, inactivo, etc.
     private List<Venta> historialCompras;
 
+
     // Constructor
     public Cliente() {
         super();
@@ -75,6 +76,17 @@ public class Cliente extends Persona {
 
     public void setHistorialCompras(List<Venta> historialCompras) {
         this.historialCompras = historialCompras != null ? historialCompras : new ArrayList<>();
+    }
+
+
+    /**
+     * Registra una compra en el historial
+     * @param venta La venta realizada
+     */
+    public void agregarCompra(Venta venta) {
+        if (venta != null) {
+            this.historialCompras.add(venta);
+        }
     }
 
 }
