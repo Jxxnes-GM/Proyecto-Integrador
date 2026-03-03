@@ -16,11 +16,7 @@ public class Empleado extends Persona {
     // Constructor con parámetros
     public Empleado(int id, String nombre, String apellido, String correo, String telefono, String codigoEmpleado,
             Cargo cargo, Double salario, Boolean estado, String password) {
-        super.nombre = nombre;
-        super.apellido = apellido;
-        super.correo = correo;
-        super.id = id;
-        super.telefono = telefono;
+        super(id, nombre, apellido, correo, telefono); // Llamada al constructor de la clase padre Persona
         this.codigoEmpleado = codigoEmpleado;
         this.cargo = cargo;
         this.salario = salario;

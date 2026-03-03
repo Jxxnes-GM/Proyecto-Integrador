@@ -1,14 +1,14 @@
 package Proyecto.Modelo;
 
-public class Persona {
+public abstract class Persona {
 
-    // Creamos los atributos de la clase persona que se van a heredar a las clases
-    // usuario, cliente y proveedor
-    public int id;
-    public String nombre;
-    public String apellido;
-    public String correo;
-    public String telefono;
+    // Atributos protegidos - accesibles en clases hijas
+    protected int id;
+    protected String nombre;
+    protected String apellido;
+    protected String correo;
+    protected String telefono;
+    protected Boolean activo;
 
     // Constructor vacio
     public Persona() {
@@ -29,6 +29,9 @@ public class Persona {
     }
 
     public void setId(int id) {
+        if (id < 0) {
+            throw new IllegalArgumentException("El ID no puede ser negativo");
+        }
         this.id = id;
     }
 
@@ -37,15 +40,21 @@ public class Persona {
     }
 
     public void setNombre(String nombre) {
-        this.nombre = nombre;
+        if (nombre == null || nombre.trim().isEmpty()) {
+            throw new IllegalArgumentException("El nombre no puede estar vacío");
+        }
+        this.nombre = nombre.trim();
     }
 
     public String getApellido() {
         return apellido;
     }
 
-    public void setApellido(String apellido) {
-        this.apellido = apellido;
+   public void setApellido(String apellido) {
+        if (apellido == null || apellido.trim().isEmpty()) {
+            throw new IllegalArgumentException("El apellido no puede estar vacío");
+        }
+         this.apellido = apellido.trim();
     }
 
     public String getCorreo() {
@@ -53,7 +62,14 @@ public class Persona {
     }
 
     public void setCorreo(String correo) {
-        this.correo = correo;
+        if (correo == null || correo.trim().isEmpty()) {
+            throw new IllegalArgumentException("El correo no puede estar vacío");
+        }
+        // Validación básica de formato de email
+        if (!correo.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Formato de correo inválido");
+        }
+        this.correo = correo.trim().toLowerCase();
     }
 
     public String getTelefono() {
@@ -61,7 +77,18 @@ public class Persona {
     }
 
     public void setTelefono(String telefono) {
-        this.telefono = telefono;
+        if (telefono != null && !telefono.trim().isEmpty()) {
+            // Validación básica - solo números, espacios, guiones, paréntesis y +
+            if (!telefono.matches("^[\\d\\s\\-\\(\\)\\+]+$")) {
+                throw new IllegalArgumentException("Formato de teléfono inválido");
+            }
+        }
+        this.telefono = telefono != null ? telefono.trim() : null;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ID: %d, Nombre: %s, Apellido: %s, Correo: %s", id, nombre, apellido, correo);
     }
 
     // Metodos
