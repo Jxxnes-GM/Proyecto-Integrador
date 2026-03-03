@@ -41,11 +41,11 @@ public class Inventario {
     }
 
     public int getIdProducto() {
-        return producto.getId();
+        return producto.getIdProducto();
     }
 
     public void setIdProducto(int idProducto) {
-        this.producto.setId(idProducto);
+        this.producto.setIdProducto(idProducto);
     }
 
     public int getCantidad() {

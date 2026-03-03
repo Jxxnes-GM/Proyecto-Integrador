@@ -33,11 +33,11 @@ public class Producto {
     }
 
     // Getters y Setters
-    public int getId() {
+    public int getIdProducto() {
         return idProducto;
     }
 
-    public void setId(int idProducto) {
+    public void setIdProducto(int idProducto) {
         this.idProducto = idProducto;
     }
 
