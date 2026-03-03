@@ -10,10 +10,8 @@ public class Producto {
     private double precioCompra;
     private double precioVenta;
     private int cantidad;
-    // private String fecha_Creacion;
-    // private String fecha_Modificacion;
-    // private String creado_Por_usuario;
-    // private String modificado_Por_usuario;
+
+
 
     // Constructor
     public Producto() {

@@ -1,6 +1,7 @@
 package Proyecto.Modelo;
 
-public class Detalle_Venta {
+
+public class Detalle_Venta { //se hereda de la clase de venta
 
     // Atributos
     private int id_detalle;

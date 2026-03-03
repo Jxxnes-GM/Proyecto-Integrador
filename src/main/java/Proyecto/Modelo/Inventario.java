@@ -6,7 +6,7 @@ public class Inventario {
     private int idInventario;
     private Producto producto;
     private int cantidad;
-    private String tipoMovimiento;
+    private String tipoMovimiento; // si es entrada o salida
     private LocalDateTime fechaMovimiento;
     private String observacion;
 
