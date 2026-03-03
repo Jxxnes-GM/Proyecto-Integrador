@@ -9,156 +9,122 @@ Sistema de gestión de ventas e inventario desarrollado en Java con patrón MVC 
 ```mermaid
 classDiagram
     class Persona {
-        #nombre: String
-        #apellido: String
-        #correo: String
-        +Persona(nombre, apellido, correo)
-        +getNombre(): String
-        +setNombre(nombre): void
-        +getApellido(): String
-        +setApellido(apellido): void
-        +getCorreo(): String
-        +setCorreo(correo): void
-    }
-
-    class Usuario {
-        -idUsuario: int
-        -contrasena: String
-        -rol: String
-        +Usuario(idUsuario, nombre, apellido, correo, contrasena, rol)
-        +getIdUsuario(): int
-        +setIdUsuario(idUsuario): void
-        +getContrasena(): String
-        +setContrasena(contrasena): void
-        +getRol(): String
-        +setRol(rol): void
-        +toString(): String
+        +id: int
+        +nombre: String
+        +apellido: String
+        +correo: String
+        +telefono: String
     }
 
     class Cliente {
-        -idCliente: int
-        +Cliente()
-        +Cliente(idCliente, nombre, apellido, correo)
-        +getIdCliente(): int
-        +setIdCliente(idCliente): void
+        +direccion: String
+        +password: String
+        +estado: Boolean
     }
 
-    class Almacenista {
-        -idAlmacenista: int
-        +Almacenista()
-        +Almacenista(idAlmacenista, nombre, apellido, correo)
-        +getIdAlmacenista(): int
-        +setIdAlmacenista(idAlmacenista): void
+    class Proveedor {
+        +direccion: String
+        +estado: Boolean
+    }
+
+    class Empleado {
+        +codigoEmpleado: String
+        +salario: Double
+        +estado: Boolean
+        +password: String
+    }
+
+    class Cargo {
+        +nombreCargo: String
+        +descripcion: String
+    }
+
+    class Categoria {
+        +idCategoria: int
+        +nombre: String
+        +descripcion: String
     }
 
     class Producto {
-        -idProducto: int
-        -nombre: String
-        -categoria: String
-        -descripcion: String
-        -precio: double
-        +Producto(idProducto, nombre, categoria, descripcion, precio)
-        +getId(): int
-        +setId(idProducto): void
-        +getNombre(): String
-        +setNombre(nombre): void
-        +getCategoria(): String
-        +setCategoria(categoria): void
-        +getDescripcion(): String
-        +setDescripcion(descripcion): void
-        +getPrecio(): double
-        +setPrecio(precio): void
-        +toString(): String
+        +idProducto: int
+        +nombre: String
+        +categoria: Categoria
+        +descripcion: String
+        +precioCompra: double
+        +precioVenta: double
+        +cantidad: int
     }
 
-    class Venta {
-        -idVenta: int
-        -fecha: LocalDateTime
-        -metodoPago: String
-        -total: double
-        -idUsuario: int
-        +Venta()
-        +Venta(idVenta, fecha, metodoPago, total, idUsuario)
-        +getId(): int
-        +setId(idVenta): void
-        +getFecha(): LocalDateTime
-        +setFecha(fecha): void
-        +getMetodoPago(): String
-        +setMetodoPago(metodoPago): void
-        +getTotal(): double
-        +setTotal(total): void
-        +getIdUsuario(): int
-        +setIdUsuario(idUsuario): void
+    class Inventario {
+        +idInventario: int
+        +producto: Producto
+        +cantidad: int
+        +tipoMovimiento: String
+        +fechaMovimiento: LocalDateTime
+        +observacion: String
     }
 
-    class Detalle_Venta {
-        -id_detalle: int
-        -venta: Venta
-        -idProducto: Producto
-        -cantidad: int
-        -precio_unitario: double
-        -subtotal: double
-        +Detalle_Venta()
-        +Detalle_Venta(id_detalle, venta, idProducto, cantidad, precio_unitario, subtotal)
-        +getId_detalle(): int
-        +setId_detalle(id_detalle): void
-        +getVenta(): Venta
-        +setVenta(venta): void
-        +getidProducto(): Producto
-        +setProducto(idProducto): void
-        +getCantidad(): int
-        +setCantidad(cantidad): void
-        +getPrecio_unitario(): double
-        +setPrecio_unitario(precio_unitario): void
-        +getSubtotal(): double
-        +calcularSubtotal(): void
-        +calcularDescuento(porcentaje): double
+    class MetodoPago {
+        +idMetodoPago: int
+        +tipo: String
     }
 
     class Carrito {
-        -items: Map~Integer,Integer~
-        +Carrito()
-        +agregar(idProducto, cantidad): void
-        +eliminar(idProducto): void
-        +getItems(): Map
+        +cliente: Cliente
+        +items: List~ItemCarrito~
+        +total: double
+        +agregarProducto(producto, cantidad): void
+        +eliminarProducto(idProducto): void
         +estaVacio(): boolean
         +vaciar(): void
     }
 
-    class Inventario {
-        -idInventario: int
-        -idProducto: int
-        -cantidad: int
-        -tipoMovimiento: String
-        -fechaMovimiento: LocalDateTime
-        -observacion: String
-        +Inventario()
-        +Inventario(idInventario, idProducto, cantidad, tipoMovimiento, fechaMovimiento, observacion)
-        +getId(): int
-        +setId(idInventario): void
-        +getIdProducto(): int
-        +setIdProducto(idProducto): void
-        +getCantidad(): int
-        +setCantidad(cantidad): void
-        +getTipoMovimiento(): String
-        +setTipoMovimiento(tipoMovimiento): void
-        +getFechaMovimiento(): LocalDateTime
-        +setFechaMovimiento(fechaMovimiento): void
-        +getObservacion(): String
-        +setObservacion(observacion): void
+    class ItemCarrito {
+        +producto: Producto
+        +cantidad: int
+        +precioUnitario: double
+        +subtotal: double
     }
 
-    class Reporte {
+    class Venta {
+        +idVenta: int
+        +numeroFactura: String
+        +fecha: LocalDateTime
+        +tipoVenta: String
+        +estado: String
+        +cliente: Cliente
+        +empleado: Empleado
+        +metodoPago: MetodoPago
+        +detalles: List~Detalle_Venta~
+        +total: double
+        +calcularTotal(): void
     }
 
-    Persona <|-- Usuario
+    class Detalle_Venta {
+        +id_detalle: int
+        +venta: Venta
+        +producto: Producto
+        +cantidad: int
+        +precioUnitario: double
+        +subtotal: double
+        +calcularSubtotal(): void
+    }
+
     Persona <|-- Cliente
-    Persona <|-- Almacenista
-    Venta --> Usuario : "usa"
-    Detalle_Venta --> Venta : "contiene"
-    Detalle_Venta --> Producto : "incluye"
-    Inventario --> Producto : "controla"
-    Carrito --> Producto : "contiene"
+    Persona <|-- Proveedor
+    Persona <|-- Empleado
+    Empleado --> Cargo
+    Producto --> Categoria
+    Inventario --> Producto
+    Carrito --> Cliente
+    Carrito --> ItemCarrito
+    ItemCarrito --> Producto
+    Venta --> Cliente
+    Venta --> Empleado
+    Venta --> MetodoPago
+    Venta --> Detalle_Venta
+    Detalle_Venta --> Producto
+    Detalle_Venta --> Venta
 ```
 
 ## Estructura del Proyecto
