@@ -1,24 +1,69 @@
 package Proyecto.Modelo;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Carrito {
-     private Map<Integer, Integer> items; 
 
-    public Carrito() { items = new HashMap<>(); }
+    // Atributos
+    private Cliente cliente;
+    private List<ItemCarrito> items;
+    private double total;
 
-    public void agregar(int idProducto, int cantidad) {
-        if (cantidad <= 0) return;
-        items.put(idProducto, items.getOrDefault(idProducto, 0) + cantidad);
+    // Constructor
+    public Carrito(Cliente cliente) {
+        this.cliente = cliente;
+        this.items = new ArrayList<>();
+        this.total = 0.0;
     }
 
-    public void eliminar(int idProducto) {
-        items.remove(idProducto);
+    // Métodos
+    public void agregarProducto(Producto producto, int cantidad) {
+        if (cantidad <= 0)
+            return;
+
+        for (ItemCarrito item : items) {
+            if (item.getProducto().getIdProducto() == producto.getIdProducto()) {
+                item.actualizarCantidad(item.getCantidad() + cantidad);
+                recalcularTotal();
+                return;
+            }
+        }
+
+        items.add(new ItemCarrito(producto, cantidad));
+        recalcularTotal();
     }
 
-    public Map<Integer,Integer> getItems() { return items; }
+    public void eliminarProducto(int idProducto) {
+        items.removeIf(item -> item.getProducto().getIdProducto() == idProducto);
+        recalcularTotal();
+    }
 
-    public boolean estaVacio() { return items.isEmpty(); }
+    public boolean estaVacio() {
+        return items.isEmpty();
+    }
 
-    public void vaciar() { items.clear(); }
+    public void vaciar() {
+        items.clear();
+        total = 0.0;
+    }
+
+    private void recalcularTotal() {
+        total = 0.0;
+        for (ItemCarrito item : items) {
+            total += item.getSubtotal();
+        }
+    }
+
+    public List<ItemCarrito> getItems() {
+        return items;
+    }
+
+    public double getTotal() {
+        return total;
+    }
+
+    public Cliente getCliente() {
+        return cliente;
+    }
 }

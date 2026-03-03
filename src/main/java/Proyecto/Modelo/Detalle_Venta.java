@@ -1,22 +1,24 @@
 package Proyecto.Modelo;
 
+package Proyecto.Modelo;
+
 public class Detalle_Venta {
 
     // Atributos
-    public int id_detalle;
-    public Venta venta;
-    public Producto producto;
-    public int cantidad;
-    public double precioUnitario;
-    public double subtotal;
+    private int id_detalle;
+    private Venta venta;
+    private Producto producto;
+    private int cantidad;
+    private double precioUnitario;
+    private double subtotal;
 
-    // Constructor vacio
+    // Constructor vacío
     public Detalle_Venta() {
-
     }
 
-  // Constructor con parametros
-    public Detalle_Venta(int id_detalle, Venta venta, Producto producto, int cantidad, double precioUnitario, double subtotal) {
+    // Constructor con parámetros
+    public Detalle_Venta(int id_detalle, Venta venta, Producto producto, int cantidad, double precioUnitario,
+            double subtotal) {
         this.id_detalle = id_detalle;
         this.venta = venta;
         this.producto = producto;
@@ -48,14 +50,6 @@ public class Detalle_Venta {
 
     public void setProducto(Producto producto) {
         this.producto = producto;
-
-    public Producto getIdProducto() {
-        return idProducto;
-    }
-
-    public void setIdProducto(Producto idProducto) {
-        this.idProducto = idProducto;
-
     }
 
     public int getCantidad() {
@@ -71,13 +65,8 @@ public class Detalle_Venta {
         return precioUnitario;
     }
 
-
     public void setPrecioUnitario(double precioUnitario) {
         this.precioUnitario = precioUnitario;
-
-    public void setPrecio_unitario(double precio_unitario) {
-        this.precio_unitario = precio_unitario;
-
         calcularSubtotal();
     }
 
@@ -85,14 +74,9 @@ public class Detalle_Venta {
         return subtotal;
     }
 
-    // Metodos
-    // Metodo para calcular el subtotal
+    // Métodos
+    // Método para calcular el subtotal
     private void calcularSubtotal() {
-
         this.subtotal = cantidad * precioUnitario;
-
-        this.subtotal = cantidad * precio_unitario;
-
     }
-
 }
