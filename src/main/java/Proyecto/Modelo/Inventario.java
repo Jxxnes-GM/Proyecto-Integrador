@@ -1,11 +1,10 @@
 package Proyecto.Modelo;
 
-import java.sql.*;
 import java.time.LocalDateTime;
 
 public class Inventario {
     private int idInventario;
-    private int idProducto;
+    private Producto producto;
     private int cantidad;
     private String tipoMovimiento;
     private LocalDateTime fechaMovimiento;
@@ -14,10 +13,10 @@ public class Inventario {
     public Inventario() {
     }
 
-    public Inventario(int idInventario, int idProducto, int cantidad, String tipoMovimiento,
+    public Inventario(int idInventario, Producto producto, int cantidad, String tipoMovimiento,
             LocalDateTime fechaMovimiento, String observacion) {
         this.idInventario = idInventario;
-        this.idProducto = idProducto;
+        this.producto = producto;
         this.cantidad = cantidad;
         this.tipoMovimiento = tipoMovimiento;
         this.fechaMovimiento = fechaMovimiento;
@@ -33,12 +32,20 @@ public class Inventario {
         this.idInventario = idInventario;
     }
 
+    public Producto getProducto() {
+        return producto;
+    }
+
+    public void setProducto(Producto producto) {
+        this.producto = producto;
+    }
+
     public int getIdProducto() {
-        return idProducto;
+        return producto.getId();
     }
 
     public void setIdProducto(int idProducto) {
-        this.idProducto = idProducto;
+        this.producto.setId(idProducto);
     }
 
     public int getCantidad() {
