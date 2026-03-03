@@ -130,26 +130,34 @@ classDiagram
 ## Estructura del Proyecto
 
 ```
-src/
-├── main/
-│   └── java/
-│       └── Proyecto/
-│           ├── Controlador/
-│           │   └── Controlador.java
-│           ├── Modelo/
-│           │   ├── Almacenista.java
-│           │   ├── Carrito.java
-│           │   ├── Cliente.java
-│           │   ├── Detalle_Venta.java
-│           │   ├── Inventario.java
-│           │   ├── Persona.java
-│           │   ├── Producto.java
-│           │   ├── Reporte.java
-│           │   ├── Usuario.java
-│           │   └── Venta.java
-│           ├── Vista/
-│           │   └── Vista.java
-│           └── Main.java
+proyecto-integrador-pii/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── Proyecto/
+│   │   │       ├── Main.java
+│   │   │       ├── Controlador/
+│   │   │       │   └── Controlador.java
+│   │   │       ├── Modelo/
+│   │   │       │   ├── Cargo.java
+│   │   │       │   ├── Carrito.java
+│   │   │       │   ├── Categoria.java
+│   │   │       │   ├── Cliente.java
+│   │   │       │   ├── Detalle_Venta.java
+│   │   │       │   ├── Empleado.java
+│   │   │       │   ├── Inventario.java
+│   │   │       │   ├── ItemCarrito.java
+│   │   │       │   ├── MetodoPago.java
+│   │   │       │   ├── Persona.java
+│   │   │       │   ├── Producto.java
+│   │   │       │   ├── Proveedor.java
+│   │   │       │   └── Venta.java
+│   │   │       └── Vista/
+│   │   │           └── Vista.java
+│   │   └── resources/
+│   └── test/
+│       └── java/
+├── target/
 ├── pom.xml
 └── README.md
 ```
