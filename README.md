@@ -8,210 +8,159 @@ Sistema de gestión de ventas e inventario desarrollado en Java con patrón MVC 
 
 ```mermaid
 classDiagram
-    %% Clase abstracta Persona (Base)
     class Persona {
-        #id: int
-        #nombre: String
-        #apellido: String
-        #correo: String
-        #telefono: String
-        #activo: Boolean
-        +getId()* int
-        +setId(int)* void
-        +getNombre()* String
-        +setNombre(String)* void
-        +getApellido()* String
-        +setApellido(String)* void
-        +getCorreo()* String
-        +setCorreo(String)* void
-        +getTelefono()* String
-        +setTelefono(String)* void
+        <<abstract>>
+        #int id
+        #String nombre
+        #String apellido
+        #String correo
+        #String telefono
+        #Boolean activo
+        +Persona()
+        +Persona(int, String, String, String, String)
+        +toString() String
     }
 
-    %% Clases que heredan de Persona
     class Cliente {
-        -tipoDocumento: String
-        -direccion: String
-        -password: String
-        -estado: Boolean
-        -historialCompras: List~Venta~
-        +create(Cliente) boolean
-        +read(id) Cliente
-        +update(Cliente) boolean
-        +delete(id) boolean
-        +getTipoDocumento() String
-        +setTipoDocumento(String) void
-        +getDireccion() String
-        +setDireccion(String) void
-        +getPassword() String
-        +setPassword(String) void
-        +getEstado() Boolean
-        +setEstado(Boolean) void
+        -String tipoDocumento
+        -String direccion
+        -String password
+        -Boolean estado
+        -List historialCompras
+        +Cliente()
+        +Cliente(int, String, String, String, String, String, String, String, Boolean)
+        +agregarCompra(Venta)
     }
 
     class Empleado {
-        -codigoEmpleado: String
-        -cargo: Cargo
-        -salario: Double
-        -estado: Boolean
-        -password: String
-        +create(Empleado) boolean
-        +read(id) Empleado
-        +update(Empleado) boolean
-        +delete(id) boolean
-       
+        -String codigoEmpleado
+        -Cargo cargo
+        -Double salario
+        -Boolean estado
+        -String password
+        +Empleado()
+        +Empleado(int, String, String, String, String, String, Cargo, Double, Boolean, String)
     }
 
     class Proveedor {
-        -direccion: String
-        -estado: Boolean
-        +create(Proveedor) boolean
-        +read(id) Proveedor
-        +update(Proveedor) boolean
-        +delete(id) boolean
-        
+        -String direccion
+        -Boolean estado
+        +Proveedor()
+        +Proveedor(int, String, String, String, String, Boolean)
     }
 
-    %% Clase Cargo (Entidad por sí sola)
-    class Cargo {
-        -nombreCargo: String
-        -descripcion: String
-        +create(Cargo) boolean
-        +read(nombre) Cargo
-        +update(Cargo) boolean
-        +delete(nombre) boolean
-        
-    }
-
-    %% Clase Categoria (Entidad por sí sola)
-    class Categoria {
-        -idCategoria: int
-        -nombre: String
-        -descripcion: String
-        +create(Categoria) boolean
-        +read(idCategoria) Categoria
-        +update(Categoria) boolean
-        +delete(idCategoria) boolean
-        
-    }
-
-    %% Clase Producto
     class Producto {
-        -idProducto: int
-        -nombre: String
-        -categoria: Categoria
-        -descripcion: String
-        -precioCompra: double
-        -precioVenta: double
-        -cantidad: int
-        +create(Producto) boolean
-        +read(idProducto) Producto
-        +update(Producto) boolean
-        +delete(idProducto) boolean
-        
+        -int idProducto
+        -String nombre
+        -String codigo
+        -Categoria categoria
+        -String descripcion
+        -int cantidad
+        -int garantiaMeses
+        -LocalDateTime fechaActualizacion
+        -double precioCompra
+        -double precioVenta
+        -double porcentajeGanancia
+        +Producto()
+        +Producto(int, String, Categoria, String, double, double, int)
     }
 
-    %% Clase MetodoPago
-    class MetodoPago {
-        -idMetodoPago: int
-        -tipo: String
-        +create(MetodoPago) boolean
-        +read(idMetodoPago) MetodoPago
-        +delete(idMetodoPago) boolean
-        
-    }
-
-    %% Clase Inventario
-    class Inventario {
-        -idInventario: int
-        -producto: Producto
-        -cantidad: int
-        -tipoMovimiento: String
-        -fechaMovimiento: LocalDateTime
-        -observacion: String
-        +create(Inventario) boolean
-        +read(idInventario) Inventario
-        +update(Inventario) boolean
-        +delete(idInventario) boolean
-        
-    }
-
-    %% Clase Venta
     class Venta {
-        -idVenta: int
-        -numeroFactura: String
-        -fecha: LocalDateTime
-        -tipoVenta: String
-        -estado: String
-        -cliente: Cliente
-        -empleado: Empleado
-        -metodoPago: MetodoPago
-        -detalles: List~Detalle_Venta~
-        -total: double
-        +create(Venta) boolean
-        +read(idVenta) Venta
-        +update(Venta) boolean
-        +delete(idVenta) boolean
-        +calcularTotal() void
+        -int idVenta
+        -String numeroFactura
+        -LocalDateTime fecha
+        -String tipoVenta
+        -String estado
+        -Cliente cliente
+        -Empleado empleado
+        -MetodoPago metodoPago
+        -List detalles
+        -double total
+        +Venta()
+        +Venta(int, String, LocalDateTime, String, String, Cliente, Empleado, MetodoPago, List)
+        +calcularTotal()
     }
 
-    %% Clase Detalle_Venta
     class Detalle_Venta {
-        -id_detalle: int
-        -venta: Venta
-        -producto: Producto
-        -cantidad: int
-        -precioUnitario: double
-        -subtotal: double
-        +create(Detalle_Venta) boolean
-        +read(id_detalle) Detalle_Venta
-        +update(Detalle_Venta) boolean
-        +delete(id_detalle) boolean
-        +calcularSubtotal() void
+        -int id_detalle
+        -Venta venta
+        -Producto producto
+        -int cantidad
+        -double precioUnitario
+        -double subtotal
+        +Detalle_Venta()
+        +Detalle_Venta(int, Venta, Producto, int, double, double)
+        +calcularSubtotal()
     }
 
-    %% Clase Carrito
     class Carrito {
-        -cliente: Cliente
-        -items: List~ItemCarrito~
-        -total: double
-        +agregarProducto(Producto, int) void
-        +eliminarProducto(int) void
+        -Cliente cliente
+        -List items
+        -double total
+        +Carrito(Cliente)
+        +agregarProducto(Producto, int)
+        +eliminarProducto(int)
         +estaVacio() boolean
-        +vaciar() void
-        +recalcularTotal() void
-
-    %% Clase ItemCarrito
-    class ItemCarrito {
-        -producto: Producto
-        -cantidad: int
-        -precioUnitario: double
-        -subtotal: double
-        +actualizarCantidad(int) void
+        +vaciar()
+        +recalcularTotal()
     }
 
-    %% Relaciones de Herencia
+    class ItemCarrito {
+        -Producto producto
+        -int cantidad
+        -double precioUnitario
+        -double subtotal
+        +ItemCarrito(Producto, int)
+        +actualizarCantidad(int)
+    }
+
+    class Cargo {
+        -String nombreCargo
+        -String descripcion
+        +Cargo()
+        +Cargo(String, String)
+    }
+
+    class Categoria {
+        -int idCategoria
+        -String nombre
+        -String descripcion
+        +Categoria()
+        +Categoria(int, String, String)
+    }
+
+    class MetodoPago {
+        -int idMetodoPago
+        -String tipo
+        +MetodoPago()
+        +MetodoPago(int, String)
+    }
+
+    class Inventario {
+        -int idInventario
+        -Producto producto
+        -int cantidad
+        -String tipoMovimiento
+        -LocalDateTime fechaMovimiento
+        -String observacion
+        +Inventario()
+        +Inventario(int, Producto, int, String, LocalDateTime, String)
+    }
+
     Persona <|-- Cliente
     Persona <|-- Empleado
     Persona <|-- Proveedor
-
-    %% Relaciones de Asociación con Cardinalidades
-    Empleado "1" -- "1" Cargo : tiene >
-    Producto "1" -- "1" Categoria : pertenece a >
-    Inventario "1" -- "1" Producto : registra >
-
-    Venta "1" -- "1" Cliente : realiza >
-    Venta "1" -- "1" Empleado : procesa >
-    Venta "1" -- "1" MetodoPago : utiliza >
-    Venta "1" -- "1..*" Detalle_Venta : contiene >
-
-    Detalle_Venta "1..*" -- "1" Producto : incluye >
-
-    Carrito "1" -- "1" Cliente : pertenece a >
-    Carrito "1" -- "0..*" ItemCarrito : contiene >
-    ItemCarrito "1..*" -- "1" Producto : referencia >
-
-    Cliente "1" -- "0..*" Venta : compra >
+    Producto "1" --> "1" Categoria
+    Empleado "1" --> "1" Cargo
+    Venta "1" --> "1" Cliente
+    Venta "1" --> "1" Empleado
+    Venta "1" --> "1" MetodoPago
+    Venta "1" --> "*" Detalle_Venta
+    Detalle_Venta "1" --> "1" Producto
+    Carrito "1" --> "1" Cliente
+    Carrito "1" --> "*" ItemCarrito
+    ItemCarrito "1" --> "1" Producto
+    Inventario "1" --> "1" Producto
 ```
 
 ## Estructura del Proyecto
