@@ -59,14 +59,7 @@ classDiagram
         +read(id) Empleado
         +update(Empleado) boolean
         +delete(id) boolean
-        +getCodigoEmpleado() String
-        +setCodigoEmpleado(String) void
-        +getCargo() Cargo
-        +setCargo(Cargo) void
-        +getSalario() Double
-        +setSalario(Double) void
-        +getEstado() Boolean
-        +setEstado(Boolean) void
+       
     }
 
     class Proveedor {
@@ -76,10 +69,7 @@ classDiagram
         +read(id) Proveedor
         +update(Proveedor) boolean
         +delete(id) boolean
-        +getDireccion() String
-        +setDireccion(String) void
-        +getEstado() Boolean
-        +setEstado(Boolean) void
+        
     }
 
     %% Clase Cargo (Entidad por sí sola)
@@ -90,10 +80,7 @@ classDiagram
         +read(nombre) Cargo
         +update(Cargo) boolean
         +delete(nombre) boolean
-        +getNombreCargo() String
-        +setNombreCargo(String) void
-        +getDescripcion() String
-        +setDescripcion(String) void
+        
     }
 
     %% Clase Categoria (Entidad por sí sola)
@@ -105,12 +92,7 @@ classDiagram
         +read(idCategoria) Categoria
         +update(Categoria) boolean
         +delete(idCategoria) boolean
-        +getId() int
-        +setId(int) void
-        +getNombre() String
-        +setNombre(String) void
-        +getDescripcion() String
-        +setDescripcion(String) void
+        
     }
 
     %% Clase Producto
@@ -126,20 +108,7 @@ classDiagram
         +read(idProducto) Producto
         +update(Producto) boolean
         +delete(idProducto) boolean
-        +getIdProducto() int
-        +setIdProducto(int) void
-        +getNombre() String
-        +setNombre(String) void
-        +getCategoria() Categoria
-        +setCategoria(Categoria) void
-        +getDescripcion() String
-        +setDescripcion(String) void
-        +getPrecioCompra() double
-        +setPrecioCompra(double) void
-        +getPrecioVenta() double
-        +setPrecioVenta(double) void
-        +getCantidad() int
-        +setCantidad(int) void
+        
     }
 
     %% Clase MetodoPago
@@ -149,10 +118,7 @@ classDiagram
         +create(MetodoPago) boolean
         +read(idMetodoPago) MetodoPago
         +delete(idMetodoPago) boolean
-        +getId() int
-        +setId(int) void
-        +getTipo() String
-        +setTipo(String) void
+        
     }
 
     %% Clase Inventario
@@ -167,14 +133,7 @@ classDiagram
         +read(idInventario) Inventario
         +update(Inventario) boolean
         +delete(idInventario) boolean
-        +getId() int
-        +setId(int) void
-        +getProducto() Producto
-        +setProducto(Producto) void
-        +getCantidad() int
-        +setCantidad(int) void
-        +getTipoMovimiento() String
-        +setTipoMovimiento(String) void
+        
     }
 
     %% Clase Venta
@@ -193,24 +152,6 @@ classDiagram
         +read(idVenta) Venta
         +update(Venta) boolean
         +delete(idVenta) boolean
-        +getId() int
-        +setId(int) void
-        +getNumeroFactura() String
-        +setNumeroFactura(String) void
-        +getFecha() LocalDateTime
-        +setFecha(LocalDateTime) void
-        +getTipoVenta() String
-        +setTipoVenta(String) void
-        +getEstado() String
-        +setEstado(String) void
-        +getCliente() Cliente
-        +setCliente(Cliente) void
-        +getEmpleado() Empleado
-        +setEmpleado(Empleado) void
-        +getMetodoPago() MetodoPago
-        +setMetodoPago(MetodoPago) void
-        +getDetalles() List~Detalle_Venta~
-        +setDetalles(List~Detalle_Venta~) void
         +calcularTotal() void
     }
 
@@ -226,16 +167,6 @@ classDiagram
         +read(id_detalle) Detalle_Venta
         +update(Detalle_Venta) boolean
         +delete(id_detalle) boolean
-        +getId_detalle() int
-        +setId_detalle(int) void
-        +getVenta() Venta
-        +setVenta(Venta) void
-        +getProducto() Producto
-        +setProducto(Producto) void
-        +getCantidad() int
-        +setCantidad(int) void
-        +getPrecioUnitario() double
-        +setPrecioUnitario(double) void
         +calcularSubtotal() void
     }
 
@@ -249,10 +180,6 @@ classDiagram
         +estaVacio() boolean
         +vaciar() void
         +recalcularTotal() void
-        +getItems() List~ItemCarrito~
-        +getTotal() double
-        +getCliente() Cliente
-    }
 
     %% Clase ItemCarrito
     class ItemCarrito {
@@ -261,9 +188,6 @@ classDiagram
         -precioUnitario: double
         -subtotal: double
         +actualizarCantidad(int) void
-        +getProducto() Producto
-        +getCantidad() int
-        +getSubtotal() double
     }
 
     %% Relaciones de Herencia
