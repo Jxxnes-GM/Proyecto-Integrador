@@ -11,8 +11,6 @@ public class Producto {
     private double precioVenta;
     private int cantidad;
 
-
-
     // Constructor
     public Producto() {
 
