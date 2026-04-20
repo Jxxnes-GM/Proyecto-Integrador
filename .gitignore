@@ -1,6 +1,6 @@
 # Build outputs
 /target/
-config.properties/
+/config.properties/
 
 
 # Java
