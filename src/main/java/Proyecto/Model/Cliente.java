@@ -1,4 +1,4 @@
-package Proyecto.Modelo;
+package Proyecto.Model;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,7 +8,7 @@ public class Cliente extends Persona {
     private String direccion;
     private String password;
     private Boolean estado; // activo, inactivo, etc.
-    private List<Venta> historialCompras;
+    private List<Documento> historialCompras;
 
 
     // Constructor
@@ -70,11 +70,11 @@ public class Cliente extends Persona {
         this.estado = estado;
     }
 
-     public List<Venta> getHistorialCompras() {
+     public List<Documento> getHistorialCompras() {
         return historialCompras;
     }
 
-    public void setHistorialCompras(List<Venta> historialCompras) {
+    public void setHistorialCompras(List<Documento> historialCompras) {
         this.historialCompras = historialCompras != null ? historialCompras : new ArrayList<>();
     }
 
@@ -83,9 +83,9 @@ public class Cliente extends Persona {
      * Registra una compra en el historial
      * @param venta La venta realizada
      */
-    public void agregarCompra(Venta venta) {
-        if (venta != null) {
-            this.historialCompras.add(venta);
+    public void agregarCompra(Documento documento) {
+        if (documento != null) {
+            this.historialCompras.add(documento);
         }
     }
 

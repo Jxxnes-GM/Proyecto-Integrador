@@ -1,4 +1,4 @@
-package Proyecto.Modelo;
+package Proyecto.Model;
 
 public class ItemCarrito {
     private Producto producto;
