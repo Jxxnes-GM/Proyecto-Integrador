@@ -23,15 +23,7 @@
             <version>8.3.0</version>
             <scope>compile</scope>
     </dependency>
-    <!-- =====================================================
-             PostgreSQL (activa por defecto)
-             Driver JDBC para PostgreSQL 15+
-        ====================================================== -->
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.7.3</version>
-        </dependency>
+    
     </dependencies>
 
 </project>
