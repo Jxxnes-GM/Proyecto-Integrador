@@ -1,4 +1,4 @@
-package Proyecto.Vista;
+package Proyecto.View;
 
 public class Vista {
     
