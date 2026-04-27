@@ -1,4 +1,4 @@
-package Proyecto.Db;
+package Proyecto.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -16,13 +16,12 @@ public class conexionApp {
 
     private static final String RUTA_CONFIG = "config.properties";
 
-    /**
-     * Retorna el valor de una propiedad especifica del archivo config.properties.
-     * Util para acceder a cualquier parametro desde otras capas de la app.
-     *
-     * @param clave - nombre de la propiedad (ej: "db.host")
-     * @return String con el valor, o null si no existe
-     */
+    
+      //Retorna el valor de una propiedad especifica del archivo config.properties.
+      //Util para acceder a cualquier parametro desde otras capas de la app.
+
+    ///@return String con el valor, o null si no existe
+     
     public static String obtenerPropiedad(String clave) {
         Properties props = new Properties();
 
@@ -36,10 +35,8 @@ public class conexionApp {
         }
     }
 
-    /**
-     * Verifica si la conexion a la base de datos esta disponible.
-     * @return true si la conexion es exitosa, false en caso contrario
-     */
+    //Verifica si la conexion a la base de datos esta disponible.
+    ///@return true si la conexion es exitosa, false en caso contrario
     public static boolean verificarConexion() {
         Connection conexion = conexionBD.obtenerConexion();
 
