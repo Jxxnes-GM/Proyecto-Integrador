@@ -1,4 +1,4 @@
-package Proyecto.Db;
+package Proyecto.util;
 
 import java.io.FileInputStream;
 import java.io.IOException;
