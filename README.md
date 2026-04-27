@@ -6,7 +6,7 @@ Sistema de gestión de ventas e inventario desarrollado en Java con patrón MVC 
 
 ## Diagrama UML
 
-![alt text](<WhatsApp Image 2026-03-16 at 10.10.39 PM.jpeg>)
+![alt text](<MER.png>)
 
 ## Estructura del Proyecto
 
