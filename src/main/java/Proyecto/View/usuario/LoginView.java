@@ -1,165 +1,182 @@
 package Proyecto.View.usuario;
 
-
 import Proyecto.Model.Cliente;
 import Proyecto.services.PersonaServices;
-import java.util.Scanner;
+import javax.swing.*;
+import java.awt.*;
 
-public class LoginView {
-
+public class LoginView extends JFrame {
+    
+    private JTextField txtEmail;
+    private JPasswordField txtPassword;
+    private JButton btnLogin;
+    private JButton btnRegistro;
+    private JButton btnSalir;
+    
     private PersonaServices personaServices;
-    private Scanner scanner;
-
+    
     public LoginView() {
         this.personaServices = new PersonaServices();
-        this.scanner = new Scanner(System.in);
+        initComponents();
     }
-
-    // Mostrar menú de login
-    public Cliente mostrarMenuLogin() {
-        limpiarPantalla();
-        imprimirEncabezado();
-
-        while (true) {
-            System.out.println("╔════════════════════════════════════════╗");
-            System.out.println("║           MENÚ DE AUTENTICACIÓN        ║");
-            System.out.println("╚════════════════════════════════════════╝\n");
-
-            System.out.println("1. Iniciar sesión");
-            System.out.println("2. Registrar nueva cuenta");
-            System.out.println("3. Salir\n");
-
-            System.out.print("Seleccione una opción: ");
-            String opcion = scanner.nextLine();
-
-            switch (opcion) {
-                case "1":
-                    Cliente cliente = realizarLogin();
-                    if (cliente != null) {
-                        return cliente;
-                    }
-                    break;
-                case "2":
-                    registrarNuevaCuenta();
-                    break;
-                case "3":
-                    System.out.println("\n¡Gracias por usar TechZone! Hasta luego.");
-                    System.exit(0);
-                    break;
-                default:
-                    System.out.println(" Opción inválida. Intente de nuevo.\n");
-            }
-        }
+    
+    private void initComponents() {
+        setTitle("TechZone - Iniciar Sesión");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setSize(900, 600);
+        setLocationRelativeTo(null);
+        setResizable(false);
+        
+        // Panel principal con color de fondo
+        JPanel mainPanel = new JPanel(new BorderLayout());
+        mainPanel.setBackground(new Color(10, 25, 47));
+        
+        // Panel izquierdo (logo)
+        JPanel leftPanel = new JPanel(new GridBagLayout());
+        leftPanel.setBackground(new Color(10, 25, 47));
+        leftPanel.setPreferredSize(new Dimension(450, 0));
+        
+        JLabel lblLogo = new JLabel();
+        lblLogo.setText("TECHZONE\nGADGETS & HOBBIES");
+        lblLogo.setFont(new Font("Arial", Font.BOLD, 28));
+        lblLogo.setForeground(new Color(0, 200, 255));
+        lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
+        leftPanel.add(lblLogo);
+        
+        // Panel derecho (formulario)
+        JPanel rightPanel = new JPanel(new GridBagLayout());
+        rightPanel.setBackground(new Color(15, 30, 55));
+        rightPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        
+        // Título
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2;
+        JLabel lblTitulo = new JLabel("INICIAR SESIÓN");
+        lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
+        lblTitulo.setForeground(Color.WHITE);
+        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
+        rightPanel.add(lblTitulo, gbc);
+        
+        // Email
+        gbc.gridy = 1;
+        gbc.gridwidth = 1;
+        JLabel lblEmail = new JLabel("Correo Electrónico:");
+        lblEmail.setForeground(Color.WHITE);
+        lblEmail.setFont(new Font("Arial", Font.PLAIN, 14));
+        rightPanel.add(lblEmail, gbc);
+        
+        gbc.gridx = 1;
+        txtEmail = new JTextField(20);
+        txtEmail.setFont(new Font("Arial", Font.PLAIN, 14));
+        txtEmail.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255)),
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        ));
+        rightPanel.add(txtEmail, gbc);
+        
+        // Contraseña
+        gbc.gridy = 2;
+        gbc.gridx = 0;
+        JLabel lblPassword = new JLabel("Contraseña:");
+        lblPassword.setForeground(Color.WHITE);
+        lblPassword.setFont(new Font("Arial", Font.PLAIN, 14));
+        rightPanel.add(lblPassword, gbc);
+        
+        gbc.gridx = 1;
+        txtPassword = new JPasswordField(20);
+        txtPassword.setFont(new Font("Arial", Font.PLAIN, 14));
+        txtPassword.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(0, 200, 255)),
+            BorderFactory.createEmptyBorder(8, 8, 8, 8)
+        ));
+        rightPanel.add(txtPassword, gbc);
+        
+        // Botones
+        gbc.gridy = 3;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
+        buttonPanel.setBackground(new Color(15, 30, 55));
+        
+        btnLogin = new JButton("INGRESAR");
+        btnLogin.setBackground(new Color(0, 200, 255));
+        btnLogin.setForeground(Color.WHITE);
+        btnLogin.setFont(new Font("Arial", Font.BOLD, 14));
+        btnLogin.setPreferredSize(new Dimension(130, 40));
+        btnLogin.setBorderPainted(false);
+        btnLogin.setFocusPainted(false);
+        
+        btnRegistro = new JButton("REGISTRARSE");
+        btnRegistro.setBackground(new Color(50, 50, 70));
+        btnRegistro.setForeground(Color.WHITE);
+        btnRegistro.setFont(new Font("Arial", Font.BOLD, 14));
+        btnRegistro.setPreferredSize(new Dimension(130, 40));
+        btnRegistro.setBorderPainted(false);
+        btnRegistro.setFocusPainted(false);
+        
+        btnSalir = new JButton("SALIR");
+        btnSalir.setBackground(new Color(200, 60, 60));
+        btnSalir.setForeground(Color.WHITE);
+        btnSalir.setFont(new Font("Arial", Font.BOLD, 14));
+        btnSalir.setPreferredSize(new Dimension(130, 40));
+        btnSalir.setBorderPainted(false);
+        btnSalir.setFocusPainted(false);
+        
+        buttonPanel.add(btnLogin);
+        buttonPanel.add(btnRegistro);
+        buttonPanel.add(btnSalir);
+        rightPanel.add(buttonPanel, gbc);
+        
+        mainPanel.add(leftPanel, BorderLayout.WEST);
+        mainPanel.add(rightPanel, BorderLayout.CENTER);
+        
+        add(mainPanel);
     }
-
-    // Realizar login
-    private Cliente realizarLogin() {
-        limpiarPantalla();
-        System.out.println("╔════════════════════════════════════════╗");
-        System.out.println("║           INICIAR SESIÓN               ║");
-        System.out.println("╚════════════════════════════════════════╝\n");
-
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
-
-        System.out.print("Contraseña: ");
-        String password = scanner.nextLine();
-
-        System.out.println("\n Validando credenciales...");
-        Cliente cliente = personaServices.autenticarCliente(email, password);
-
-        if (cliente != null) {
-            limpiarPantalla();
-            System.out.println("╔════════════════════════════════════════╗");
-            System.out.println("║    BIENVENIDO AL SISTEMA TECHZONE      ║");
-            System.out.println("╚════════════════════════════════════════╝\n");
-            System.out.println(" Hola, " + cliente.getNombre() + " " + cliente.getApellido());
-            System.out.println("ID Cliente: " + cliente.getId());
-            pausa(2);
-            return cliente;
-        } else {
-            System.out.println("\n Credenciales inválidas. Intente de nuevo.\n");
-            pausa(2);
-            return null;
-        }
+    
+    // Getters
+    public String getEmail() {
+        return txtEmail.getText().trim();
     }
-
-    // Registrar nueva cuenta
-    private void registrarNuevaCuenta() {
-        limpiarPantalla();
-        System.out.println("╔════════════════════════════════════════╗");
-        System.out.println("║        CREAR NUEVA CUENTA              ║");
-        System.out.println("╚════════════════════════════════════════╝\n");
-
-        System.out.print("Nombre: ");
-        String nombre = scanner.nextLine();
-
-        System.out.print("Apellido: ");
-        String apellido = scanner.nextLine();
-
-        System.out.print("Email: ");
-        String email = scanner.nextLine();
-
-        System.out.print("Teléfono: ");
-        String telefono = scanner.nextLine();
-
-        System.out.print("Tipo de documento (CC/TI/Pasaporte): ");
-        String tipoDocumento = scanner.nextLine();
-
-        System.out.print("Contraseña (mín. 6 caracteres): ");
-        String password = scanner.nextLine();
-
-        System.out.print("Confirmar contraseña: ");
-        String confirmar = scanner.nextLine();
-
-        if (!password.equals(confirmar)) {
-            System.out.println(" Las contraseñas no coinciden.\n");
-            pausa(2);
-            return;
-        }
-
-        System.out.print("Dirección: ");
-        String direccion = scanner.nextLine();
-
-        System.out.println("\n Registrando cuenta...");
-
-        boolean registrado = personaServices.registrarCliente(
-                nombre,
-                apellido,
-                email,
-                telefono,
-                tipoDocumento,
-                password,
-                direccion);
-
-        if (registrado) {
-            System.out.println(" Cuenta creada exitosamente!");
-            System.out.println("Ahora puede iniciar sesión con sus credenciales.\n");
-        } else {
-            System.out.println(" Error al crear la cuenta. Intente de nuevo.\n");
-        }
-
-        pausa(3);
+    
+    public String getPassword() {
+        return new String(txtPassword.getPassword());
     }
-
-    // Utilidades
-    private void limpiarPantalla() {
-        System.out.print("\033[H\033[2J");
-        System.out.flush();
+    
+    public JButton getBtnLogin() {
+        return btnLogin;
     }
-
-    private void imprimirEncabezado() {
-        System.out.println("╔════════════════════════════════════════╗");
-        System.out.println("║         BIENVENIDO A TECHZONE          ║");
-        System.out.println("║      Sistema de Gestión de Ventas      ║");
-        System.out.println("╚════════════════════════════════════════╝\n");
+    
+    public JButton getBtnRegistro() {
+        return btnRegistro;
     }
-
-    private void pausa(int segundos) {
-        try {
-            Thread.sleep(segundos * 1000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+    
+    public JButton getBtnSalir() {
+        return btnSalir;
+    }
+    
+    // Métodos utilitarios
+    public void mostrarMensaje(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje);
+    }
+    
+    public void mostrarError(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    public void limpiarCampos() {
+        txtEmail.setText("");
+        txtPassword.setText("");
+    }
+    
+    public void abrirMenuPrincipal(Cliente cliente) {
+        MenuPrincipalView menuView = new MenuPrincipalView(cliente);
+        menuView.setVisible(true);
+        this.dispose();
     }
 }
