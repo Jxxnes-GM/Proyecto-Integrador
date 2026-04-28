@@ -12,7 +12,7 @@ public class CarritoDAO {
         String sql = "INSERT INTO carrito (id_cliente, creado_en) VALUES (?, NOW())";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, idCliente);
             pstmt.executeUpdate();
@@ -32,7 +32,7 @@ public class CarritoDAO {
         String sql = "SELECT * FROM carrito WHERE id_carrito = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setInt(1, idCarrito);
             ResultSet rs = pstmt.executeQuery();
@@ -51,7 +51,7 @@ public class CarritoDAO {
         String sql = "SELECT * FROM carrito WHERE id_cliente = ? ORDER BY creado_en DESC LIMIT 1";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setInt(1, idCliente);
             ResultSet rs = pstmt.executeQuery();
@@ -70,7 +70,7 @@ public class CarritoDAO {
         String sql = "DELETE FROM carrito WHERE id_carrito = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setInt(1, idCarrito);
             return pstmt.executeUpdate() > 0;
@@ -83,6 +83,12 @@ public class CarritoDAO {
     private Carrito mapearCarrito(ResultSet rs) throws SQLException {
         Cliente cliente = new Cliente();
         cliente.setId(rs.getInt("id_cliente"));
-        return new Carrito(cliente);
+
+        Carrito carrito = new Carrito();
+        carrito.setIdCarrito(rs.getInt("id_carrito"));
+        carrito.setCliente(cliente);
+        carrito.setCreadoEn(rs.getTimestamp("creado_en").toLocalDateTime());
+
+        return carrito;
     }
 }

@@ -1,76 +1,56 @@
 package Proyecto.Model;
+
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Cliente extends Persona {
     // Atributos
-    private String tipoDocumento;
-    private String direccion;
-    private String password;
-    private Boolean estado; // activo, inactivo, etc.
+    private String passwordHash;
+    private LocalDateTime fechaRegistro;
     private List<Documento> historialCompras;
 
-
-    // Constructor
+    // Constructor sin parámetros
     public Cliente() {
         super();
-        this.estado = true;
+        this.fechaRegistro = LocalDateTime.now();
         this.historialCompras = new ArrayList<>();
-         // Llamada al constructor de la clase padre Persona
     }
 
     // Constructor con parámetros
-    public Cliente(int id, String nombre, String apellido, String correo, String telefono, String tipoDocumento, String password, String direccion,
-            Boolean estado) {
-        super(id, nombre, apellido, correo, telefono); // Llamada al constructor de la clase padre Persona
-        this.tipoDocumento = tipoDocumento;
-        this.password = password;
-        this.direccion = direccion;
-        this.estado = estado != null ? estado : true;
+    public Cliente(int id, String nombre, String apellido, String documento, String telefono,
+            String email, String direccion, String passwordHash) {
+        super(id, nombre, apellido, documento, telefono, email, direccion);
+        this.passwordHash = passwordHash;
+        this.fechaRegistro = LocalDateTime.now();
         this.historialCompras = new ArrayList<>();
     }
 
     // Getters y Setters
 
-    public String getTipoDocumento() {
-        return tipoDocumento;
+    public String getPasswordHash() {
+        return passwordHash;
     }
 
-    public void setTipoDocumento(String tipoDocumento) {
-        if (tipoDocumento != null && !tipoDocumento.matches("CC|NIT|Pasaporte|CE|TI")) {
-            throw new IllegalArgumentException("Tipo de documento inválido");
+    public void setPasswordHash(String passwordHash) {
+        if (passwordHash == null || passwordHash.trim().isEmpty()) {
+            throw new IllegalArgumentException("La contraseña no puede estar vacía");
         }
-        this.tipoDocumento = tipoDocumento;
+        this.passwordHash = passwordHash.trim();
     }
 
-    public String getPassword() {
-        return password;
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
     }
 
-      public void setPassword(String password) {
-        if (password == null || password.length() < 6) {
-            throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres");
+    public void setFechaRegistro(LocalDateTime fechaRegistro) {
+        if (fechaRegistro == null) {
+            throw new IllegalArgumentException("La fecha de registro no puede ser nula");
         }
-        this.password = password;
+        this.fechaRegistro = fechaRegistro;
     }
 
-    public String getDireccion() {
-        return direccion;
-    }
-
-    public void setDireccion(String direccion) {
-        this.direccion = direccion;
-    }
-
-    public Boolean getEstado() {
-        return estado;
-    }
-
-    public void setEstado(Boolean estado) {
-        this.estado = estado;
-    }
-
-     public List<Documento> getHistorialCompras() {
+    public List<Documento> getHistorialCompras() {
         return historialCompras;
     }
 
@@ -78,10 +58,10 @@ public class Cliente extends Persona {
         this.historialCompras = historialCompras != null ? historialCompras : new ArrayList<>();
     }
 
-
     /**
      * Registra una compra en el historial
-     * @param venta La venta realizada
+     * 
+     * @param documento La venta realizada
      */
     public void agregarCompra(Documento documento) {
         if (documento != null) {

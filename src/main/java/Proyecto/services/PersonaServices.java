@@ -16,8 +16,8 @@ public class PersonaServices {
 
     // Registrar nuevo cliente con validaciones completas
     public boolean registrarCliente(String nombre, String apellido, String email,
-                                    String telefono, String tipoDocumento,
-                                    String password, String direccion) {
+            String telefono, String tipoDocumento,
+            String password, String direccion) {
 
         // Validar que no exista un cliente con el mismo email
         if (personaDAO.emailExiste(email)) {
@@ -34,12 +34,10 @@ public class PersonaServices {
         Cliente cliente = new Cliente();
         cliente.setNombre(nombre.trim());
         cliente.setApellido(apellido.trim());
-        cliente.setCorreo(email.toLowerCase().trim());
+        cliente.setEmail(email.toLowerCase().trim());
         cliente.setTelefono(telefono);
-        cliente.setTipoDocumento(tipoDocumento);
-        cliente.setPassword(encriptarPassword(password));
+        cliente.setPasswordHash(encriptarPassword(password));
         cliente.setDireccion(direccion);
-        cliente.setEstado(true);
 
         return personaDAO.crearCliente(cliente);
     }
@@ -58,7 +56,7 @@ public class PersonaServices {
             return null;
         }
 
-        if (!verificarPassword(password, cliente.getPassword())) {
+        if (!verificarPassword(password, cliente.getPasswordHash())) {
             System.out.println("Error: Contraseña incorrecta");
             return null;
         }
@@ -79,7 +77,7 @@ public class PersonaServices {
 
     // Actualizar información del cliente
     public boolean actualizarCliente(int idCliente, String nombre, String apellido,
-                                     String telefono, String direccion) {
+            String telefono, String direccion) {
         Cliente cliente = personaDAO.obtenerClientePorId(idCliente);
 
         if (cliente == null) {
@@ -105,7 +103,7 @@ public class PersonaServices {
         }
 
         // Verificar contraseña actual
-        if (!verificarPassword(passwordActual, cliente.getPassword())) {
+        if (!verificarPassword(passwordActual, cliente.getPasswordHash())) {
             System.out.println("Error: La contraseña actual es incorrecta");
             return false;
         }

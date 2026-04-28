@@ -6,8 +6,10 @@ public abstract class Persona {
     protected int id;
     protected String nombre;
     protected String apellido;
-    protected String correo;
+    protected String documento;
     protected String telefono;
+    protected String email;
+    protected String direccion;
     protected Boolean activo;
 
     // Constructor vacio
@@ -15,12 +17,16 @@ public abstract class Persona {
     }
 
     // Constructor con parametros
-    public Persona(int id, String nombre, String apellido, String correo, String telefono) {
+    public Persona(int id, String nombre, String apellido, String documento, String telefono, String email,
+            String direccion) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
-        this.correo = correo;
+        this.documento = documento;
         this.telefono = telefono;
+        this.email = email;
+        this.direccion = direccion;
+        this.activo = true;
     }
 
     // Getters y Setters
@@ -50,26 +56,22 @@ public abstract class Persona {
         return apellido;
     }
 
-   public void setApellido(String apellido) {
+    public void setApellido(String apellido) {
         if (apellido == null || apellido.trim().isEmpty()) {
             throw new IllegalArgumentException("El apellido no puede estar vacío");
         }
-         this.apellido = apellido.trim();
+        this.apellido = apellido.trim();
     }
 
-    public String getCorreo() {
-        return correo;
+    public String getDocumento() {
+        return documento;
     }
 
-    public void setCorreo(String correo) {
-        if (correo == null || correo.trim().isEmpty()) {
-            throw new IllegalArgumentException("El correo no puede estar vacío");
+    public void setDocumento(String documento) {
+        if (documento == null || documento.trim().isEmpty()) {
+            throw new IllegalArgumentException("El documento no puede estar vacío");
         }
-        // Validación básica de formato de email
-        if (!correo.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new IllegalArgumentException("Formato de correo inválido");
-        }
-        this.correo = correo.trim().toLowerCase();
+        this.documento = documento.trim();
     }
 
     public String getTelefono() {
@@ -86,12 +88,43 @@ public abstract class Persona {
         this.telefono = telefono != null ? telefono.trim() : null;
     }
 
-    @Override
-    public String toString() {
-        return String.format("ID: %d, Nombre: %s, Apellido: %s, Correo: %s", id, nombre, apellido, correo);
+    public String getEmail() {
+        return email;
     }
 
-    // Metodos
-    //
+    public void setEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            throw new IllegalArgumentException("El email no puede estar vacío");
+        }
+        // Validación básica de formato de email
+        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Formato de email inválido");
+        }
+        this.email = email.trim().toLowerCase();
+    }
 
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(String direccion) {
+        if (direccion == null || direccion.trim().isEmpty()) {
+            throw new IllegalArgumentException("La dirección no puede estar vacía");
+        }
+        this.direccion = direccion.trim();
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo != null ? activo : true;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ID: %d, Nombre: %s, Apellido: %s, Documento: %s, Email: %s, Activo: %s",
+                id, nombre, apellido, documento, email, activo);
+    }
 }

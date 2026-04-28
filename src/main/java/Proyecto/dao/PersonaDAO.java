@@ -10,17 +10,18 @@ public class PersonaDAO {
 
     // Crear cliente
     public boolean crearCliente(Cliente cliente) {
-        String sql = "INSERT INTO persona (tipo_enum, nombre, apellido, documento, telefono, email, direccion, activo) " +
-                     "VALUES ('Cliente', ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO persona (tipo_enum, nombre, apellido, documento, telefono, email, direccion, activo) "
+                +
+                "VALUES ('Cliente', ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setString(1, cliente.getNombre());
             pstmt.setString(2, cliente.getApellido());
-            pstmt.setString(3, cliente.getTipoDocumento());
+            pstmt.setString(3, cliente.getDocumento());
             pstmt.setString(4, cliente.getTelefono());
-            pstmt.setString(5, cliente.getCorreo());
+            pstmt.setString(5, cliente.getEmail());
             pstmt.setString(6, cliente.getDireccion());
             pstmt.setBoolean(7, true);
 
@@ -36,7 +37,7 @@ public class PersonaDAO {
         String sql = "SELECT * FROM persona WHERE id_persona = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setInt(1, idPersona);
             ResultSet rs = pstmt.executeQuery();
@@ -55,7 +56,7 @@ public class PersonaDAO {
         String sql = "SELECT * FROM persona WHERE email = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
@@ -74,7 +75,7 @@ public class PersonaDAO {
         String sql = "SELECT COUNT(*) FROM persona WHERE email = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setString(1, email);
             ResultSet rs = pstmt.executeQuery();
@@ -94,8 +95,8 @@ public class PersonaDAO {
         List<Cliente> clientes = new ArrayList<>();
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             Statement stmt = conexion.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
+                Statement stmt = conexion.createStatement();
+                ResultSet rs = stmt.executeQuery(sql)) {
 
             while (rs.next()) {
                 clientes.add(mapearCliente(rs));
@@ -109,16 +110,16 @@ public class PersonaDAO {
     // Actualizar cliente
     public boolean actualizarCliente(Cliente cliente) {
         String sql = "UPDATE persona SET nombre = ?, apellido = ?, documento = ?, " +
-                     "telefono = ?, email = ?, direccion = ? WHERE id_persona = ?";
+                "telefono = ?, email = ?, direccion = ? WHERE id_persona = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setString(1, cliente.getNombre());
             pstmt.setString(2, cliente.getApellido());
-            pstmt.setString(3, cliente.getTipoDocumento());
+            pstmt.setString(3, cliente.getDocumento());
             pstmt.setString(4, cliente.getTelefono());
-            pstmt.setString(5, cliente.getCorreo());
+            pstmt.setString(5, cliente.getEmail());
             pstmt.setString(6, cliente.getDireccion());
             pstmt.setInt(7, cliente.getId());
 
@@ -134,7 +135,7 @@ public class PersonaDAO {
         String sql = "UPDATE cliente SET contrasena_hash = ? WHERE id_persona = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setString(1, passwordHash);
             pstmt.setInt(2, idPersona);
@@ -151,7 +152,7 @@ public class PersonaDAO {
         String sql = "UPDATE persona SET activo = false WHERE id_persona = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql)) {
+                PreparedStatement pstmt = conexion.prepareStatement(sql)) {
 
             pstmt.setInt(1, idPersona);
             return pstmt.executeUpdate() > 0;
@@ -164,15 +165,13 @@ public class PersonaDAO {
     // Mapear ResultSet a Cliente
     private Cliente mapearCliente(ResultSet rs) throws SQLException {
         return new Cliente(
-            rs.getInt("id_persona"),
-            rs.getString("nombre"),
-            rs.getString("apellido"),
-            rs.getString("email"),
-            rs.getString("telefono"),
-            rs.getString("documento"),
-            rs.getString("contrasena_hash"),
-            rs.getString("direccion"),
-            rs.getBoolean("activo")
-        );
+                rs.getInt("id_persona"),
+                rs.getString("nombre"),
+                rs.getString("apellido"),
+                rs.getString("documento"),
+                rs.getString("telefono"),
+                rs.getString("email"),
+                rs.getString("direccion"),
+                rs.getString("contrasena_hash"));
     }
 }

@@ -156,14 +156,17 @@ public class ProductoDAO {
             ""
         );
 
-        return new Producto(
-            rs.getInt("id_producto"),
-            rs.getString("nombre"),
-            categoria,
-            rs.getString("descripcion"),
-            rs.getDouble("precio_compra"),
-            rs.getDouble("precio_venta"),
-            rs.getInt("stock_actual")
-        );
+        Producto producto = new Producto();
+        producto.setIdProducto(rs.getInt("id_producto"));
+        producto.setCategoria(categoria);
+        producto.setNombre(rs.getString("nombre"));
+        producto.setDescripcion(rs.getString("descripcion"));
+        producto.setPrecioCompra(rs.getDouble("precio_compra"));
+        producto.setPrecioVenta(rs.getDouble("precio_venta"));
+        producto.setCantidad(rs.getInt("stock_actual"));
+        producto.setStockMinimo(rs.getInt("stock_minimo"));
+        producto.setActivo(rs.getBoolean("activo"));
+
+        return producto;
     }
 }

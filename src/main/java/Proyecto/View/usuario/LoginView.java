@@ -1,4 +1,5 @@
-package Proyecto.View.usuario;
+package Proyecto.View.Usuario;
+
 
 import Proyecto.Model.Cliente;
 import Proyecto.services.PersonaServices;
@@ -123,14 +124,13 @@ public class LoginView {
         System.out.println("\n Registrando cuenta...");
 
         boolean registrado = personaServices.registrarCliente(
-            nombre,
-            apellido,
-            email,
-            telefono,
-            tipoDocumento,
-            password,
-            direccion
-        );
+                nombre,
+                apellido,
+                email,
+                telefono,
+                tipoDocumento,
+                password,
+                direccion);
 
         if (registrado) {
             System.out.println(" Cuenta creada exitosamente!");

@@ -4,28 +4,32 @@ public class Producto {
 
     // Atributos
     private int idProducto;
-    private String nombre;
     private Categoria categoria;
+    private String nombre;
     private String descripcion;
     private double precioCompra;
     private double precioVenta;
-    private int cantidad;
+    private int stockActual;
+    private int stockMinimo;
+    private Boolean activo;
 
-    // Constructor
+    // Constructor sin parámetros
     public Producto() {
-
+        this.activo = true;
     }
 
     // Constructor con parámetros
-    public Producto(int idProducto, String nombre, Categoria categoria, String descripcion, double precioCompra,
-            double precioVenta, int cantidad) {
+    public Producto(int idProducto, Categoria categoria, String nombre, String descripcion,
+            double precioCompra, double precioVenta, int stockActual, int stockMinimo) {
         this.idProducto = idProducto;
-        this.nombre = nombre;
         this.categoria = categoria;
+        this.nombre = nombre;
         this.descripcion = descripcion;
         this.precioCompra = precioCompra;
         this.precioVenta = precioVenta;
-        this.cantidad = cantidad;
+        this.stockActual = stockActual;
+        this.stockMinimo = stockMinimo;
+        this.activo = true;
     }
 
     // Getters y Setters
@@ -78,11 +82,53 @@ public class Producto {
     }
 
     public int getCantidad() {
-        return cantidad;
+        return stockActual;
     }
 
     public void setCantidad(int cantidad) {
-        this.cantidad = cantidad;
+        this.stockActual = cantidad;
     }
 
+    public int getStockActual() {
+        return stockActual;
+    }
+
+    public void setStockActual(int stockActual) {
+        if (stockActual < 0) {
+            throw new IllegalArgumentException("El stock actual no puede ser negativo");
+        }
+        this.stockActual = stockActual;
+    }
+
+    public int getStockMinimo() {
+        return stockMinimo;
+    }
+
+    public void setStockMinimo(int stockMinimo) {
+        if (stockMinimo < 0) {
+            throw new IllegalArgumentException("El stock mínimo no puede ser negativo");
+        }
+        this.stockMinimo = stockMinimo;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo != null ? activo : true;
+    }
+
+    // Verifica si el producto requiere reorden
+
+    public boolean requiereReorden() {
+        return stockActual <= stockMinimo;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ID: %d, Nombre: %s, Categoría: %s, Stock: %d, Precio Venta: %.2f, Activo: %s",
+                idProducto, nombre, categoria != null ? categoria.getNombre() : "N/A",
+                stockActual, precioVenta, activo);
+    }
 }

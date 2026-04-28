@@ -1,4 +1,4 @@
-package Proyecto.View.usuario;
+package Proyecto.View.Usuario;
 
 public class MenuPrincipalView {
 

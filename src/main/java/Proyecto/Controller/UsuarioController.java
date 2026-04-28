@@ -15,7 +15,7 @@ public class UsuarioController {
 
     // Registrar nuevo cliente
     public boolean registrarCliente(String nombre, String apellido, String email, String telefono,
-                                    String tipoDocumento, String password, String direccion) {
+            String tipoDocumento, String password, String direccion) {
         // Validar que el email no exista
         if (personaDAO.emailExiste(email)) {
             System.out.println("El email ya está registrado");
@@ -24,9 +24,9 @@ public class UsuarioController {
 
         // Validar campos requeridos
         if (nombre == null || nombre.trim().isEmpty() ||
-            apellido == null || apellido.trim().isEmpty() ||
-            email == null || email.trim().isEmpty() ||
-            password == null || password.length() < 6) {
+                apellido == null || apellido.trim().isEmpty() ||
+                email == null || email.trim().isEmpty() ||
+                password == null || password.length() < 6) {
             System.out.println("Datos incompletos o contraseña muy corta");
             return false;
         }
@@ -35,12 +35,10 @@ public class UsuarioController {
         Cliente cliente = new Cliente();
         cliente.setNombre(nombre);
         cliente.setApellido(apellido);
-        cliente.setCorreo(email);
+        cliente.setEmail(email);
         cliente.setTelefono(telefono);
-        cliente.setTipoDocumento(tipoDocumento);
-        cliente.setPassword(hasearPassword(password));
+        cliente.setPasswordHash(hasearPassword(password));
         cliente.setDireccion(direccion);
-        cliente.setEstado(true);
 
         return personaDAO.crearCliente(cliente);
     }
@@ -56,7 +54,7 @@ public class UsuarioController {
         }
 
         // Verificar contraseña
-        if (verificarPassword(password, cliente.getPassword())) {
+        if (verificarPassword(password, cliente.getPasswordHash())) {
             return cliente;
         }
 
@@ -96,7 +94,7 @@ public class UsuarioController {
         }
 
         // Verificar contraseña actual
-        if (!verificarPassword(passwordActual, cliente.getPassword())) {
+        if (!verificarPassword(passwordActual, cliente.getPasswordHash())) {
             System.out.println("Contraseña actual incorrecta");
             return false;
         }
