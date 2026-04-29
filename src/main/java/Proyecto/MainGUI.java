@@ -1,14 +1,15 @@
 package Proyecto;
 
-import Proyecto.View.ViewGUI;
+
+import Proyecto.View.usuario.LoginView;
 
 public class MainGUI {
 
     public static void main(String[] args) {
 
         javax.swing.SwingUtilities.invokeLater(() -> {
-            ViewGUI vista = new ViewGUI();
-            vista.setVisible(true);
+            LoginView login = new LoginView();
+            login.setVisible(true);
         });
 
     }
