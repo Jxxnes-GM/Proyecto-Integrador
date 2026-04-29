@@ -2,10 +2,10 @@ package Proyecto.View;
 
 import javax.swing.*;
 import java.awt.*;
+import Proyecto.Controller.UsuarioController;
 
 public class ViewGUI extends JFrame {
 
-    // 🔒 Componentes privados (BIEN HECHO)
     private JTextField tfCorreo;
     private JPasswordField pfContrasena;
     private JButton btnLogin;
@@ -18,11 +18,15 @@ public class ViewGUI extends JFrame {
 
     private JPanel panelArea;
 
+    private UsuarioController controller;
+
     public ViewGUI() {
         initComponents();
     }
 
     private void initComponents() {
+        this.controller = new UsuarioController();
+
         setTitle("TechZone - Sistema");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setSize(1100, 650);
@@ -113,6 +117,13 @@ public class ViewGUI extends JFrame {
 
         gbc.gridx = 1;
         btnRegistro = new JButton("Registro");
+        btnRegistro.addActionListener(e -> {
+            // Acción al hacer clic en el botón de registro
+
+            System.out.println("Botón de registro clickeado");
+            controller.registrarCliente(getRegNombre(), getRegApellido(), getRegCorreo(), "", "DNI", getRegPassword(),
+                    "");
+        });
         p.add(btnRegistro, gbc);
 
         gbc.gridy++;

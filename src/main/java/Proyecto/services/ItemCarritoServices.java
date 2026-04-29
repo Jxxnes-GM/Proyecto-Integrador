@@ -7,12 +7,12 @@ import Proyecto.dao.ItemCarritoDAO;
 import Proyecto.dao.ProductoDAO;
 import java.util.List;
 
-public class ItenCarritoServices {
+public class ItemCarritoServices {
 
     private ItemCarritoDAO itemCarritoDAO;
     private ProductoDAO productoDAO;
 
-    public ItenCarritoServices() {
+    public ItemCarritoServices() {
         this.itemCarritoDAO = new ItemCarritoDAO();
         this.productoDAO = new ProductoDAO();
     }
@@ -127,9 +127,10 @@ public class ItenCarritoServices {
             total += subtotal;
 
             resumen.append(item).append(". ").append(producto.getNombre()).append("\n")
-                   .append("   Cantidad: ").append(ic.getCantidad()).append("\n")
-                   .append("   Precio unitario: $").append(String.format("%.2f", producto.getPrecioVenta())).append("\n")
-                   .append("   Subtotal: $").append(String.format("%.2f", subtotal)).append("\n\n");
+                    .append("   Cantidad: ").append(ic.getCantidad()).append("\n")
+                    .append("   Precio unitario: $").append(String.format("%.2f", producto.getPrecioVenta()))
+                    .append("\n")
+                    .append("   Subtotal: $").append(String.format("%.2f", subtotal)).append("\n\n");
 
             item++;
         }
@@ -147,7 +148,8 @@ public class ItenCarritoServices {
             return false;
         }
         // Obtener cantidad actual y sumar el incremento
-        // Nota: Esto requeriría obtener el item actual, lo que no es posible con la estructura actual
+        // Nota: Esto requeriría obtener el item actual, lo que no es posible con la
+        // estructura actual
         System.out.println("Método requiere acceso al DAO para obtener cantidad actual");
         return false;
     }
@@ -159,7 +161,8 @@ public class ItenCarritoServices {
             return false;
         }
         // Obtener cantidad actual y restar el decremento
-        // Nota: Esto requeriría obtener el item actual, lo que no es posible con la estructura actual
+        // Nota: Esto requeriría obtener el item actual, lo que no es posible con la
+        // estructura actual
         System.out.println("Método requiere acceso al DAO para obtener cantidad actual");
         return false;
     }
