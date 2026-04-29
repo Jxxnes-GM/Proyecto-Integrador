@@ -1,4 +1,4 @@
-package Proyecto.View.Usuario;
+package Proyecto.View.usuario;
 
 import Proyecto.Model.Cliente;
 import Proyecto.services.PersonaServices;
@@ -13,6 +13,8 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import javafx.stage.Stage;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 
 public class LoginView extends Application {
 
@@ -48,10 +50,31 @@ public class LoginView extends Application {
         stage.setResizable(false);
 
         // ── Panel izquierdo (logo) ───────────────────────────────────────────
-        VBox leftPanel = new VBox();
+        VBox leftPanel = new VBox(20);
         leftPanel.setAlignment(Pos.CENTER);
         leftPanel.setPrefWidth(450);
         leftPanel.setStyle("-fx-background-color: #0A1933;");
+
+        // Cargar logo desde resources
+        ImageView imgLogo = null;
+        try {
+            java.io.InputStream logoStream = getClass().getResourceAsStream("/logo.jpg");
+            if (logoStream == null) {
+                logoStream = getClass().getResourceAsStream("logo.jpg");
+            }
+            if (logoStream != null) {
+                Image logoImg = new Image(logoStream);
+                imgLogo = new ImageView(logoImg);
+                imgLogo.setFitWidth(220);
+                imgLogo.setFitHeight(220);
+                imgLogo.setPreserveRatio(true);
+                // Imagen circular
+                javafx.scene.shape.Circle clip = new javafx.scene.shape.Circle(110, 110, 110);
+                imgLogo.setClip(clip);
+            }
+        } catch (Exception ex) {
+            System.err.println("Logo no encontrado: " + ex.getMessage());
+        }
 
         Label lblLogo = new Label("TECHZONE");
         lblLogo.setFont(Font.font("Arial", FontWeight.BOLD, 36));
@@ -61,7 +84,11 @@ public class LoginView extends Application {
         lblSub.setFont(Font.font("Arial", FontWeight.NORMAL, 16));
         lblSub.setTextFill(Color.web("#00C8FF"));
 
-        leftPanel.getChildren().addAll(lblLogo, lblSub);
+        if (imgLogo != null) {
+            leftPanel.getChildren().addAll(imgLogo, lblLogo, lblSub);
+        } else {
+            leftPanel.getChildren().addAll(lblLogo, lblSub);
+        }
 
         // ── Panel derecho (formulario) ───────────────────────────────────────
         GridPane rightPanel = new GridPane();
