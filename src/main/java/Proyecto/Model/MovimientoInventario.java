@@ -120,6 +120,25 @@ public class MovimientoInventario {
         this.subtotalLinea = this.cantidad * this.precioUnitario;
     }
 
+    // ── Alias de métodos para compatibilidad ────────────────────────────────
+    public int getId() {
+        return idMovimiento;
+    }
+
+    public String getTipo() {
+        // Determinar el tipo basado en la cantidad (positivo = entrada, negativo =
+        // salida)
+        return cantidad > 0 ? "Entrada" : "Salida";
+    }
+
+    public java.time.LocalDate getFecha() {
+        return fechaMovimiento.toLocalDate();
+    }
+
+    public String getObservacion() {
+        return "Movimiento registrado";
+    }
+
     @Override
     public String toString() {
         return String.format("ID: %d, Producto: %s, Cantidad: %d, Precio Unitario: %.2f, Subtotal: %.2f, Fecha: %s",

@@ -248,11 +248,11 @@ public class MovimientosView {
         try {
             var stockBajo = inventarioServices.obtenerProductosConStockBajo();
             for (var p : stockBajo) {
-                alertas.add(new FilaAlerta(
-                        p.getNombre(),
-                        p.getCantidad(),
-                        p.getStockMinimo() != null ? p.getStockMinimo() : 5,
-                        p.getCantidad() == 0 ? "Crítico" : "Bajo"));
+                String nombre = (String) p.get("nombre");
+                int cantidad = ((Number) p.get("stockActual")).intValue();
+                int stockMinimo = p.containsKey("stockMinimo") ? ((Number) p.get("stockMinimo")).intValue() : 5;
+                String nivel = cantidad == 0 ? "Crítico" : "Bajo";
+                alertas.add(new FilaAlerta(nombre, cantidad, stockMinimo, nivel));
             }
             lblTotalAlertas.setText(String.valueOf(alertas.size()));
             lblTotalAlertas.setTextFill(alertas.isEmpty() ? Color.web("#1A8A2A") : Color.web("#C83C3C"));

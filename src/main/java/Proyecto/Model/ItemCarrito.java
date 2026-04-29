@@ -51,6 +51,10 @@ public class ItemCarrito {
         return idItem;
     }
 
+    public int getId() {
+        return idItem;
+    }
+
     public void setIdItem(int idItem) {
         if (idItem < 0) {
             throw new IllegalArgumentException("El ID no puede ser negativo");

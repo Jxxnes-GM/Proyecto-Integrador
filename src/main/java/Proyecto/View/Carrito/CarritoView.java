@@ -211,8 +211,8 @@ public class CarritoView {
         confirm.showAndWait().ifPresent(r -> {
             if (r == ButtonType.YES) {
                 try {
-                    boolean ok = documentoServices.registrarCompra(cliente.getId());
-                    if (ok) {
+                    int idDocumento = documentoServices.registrarCompra(cliente.getId());
+                    if (idDocumento > 0) {
                         new Alert(Alert.AlertType.INFORMATION,
                                 "¡Compra realizada exitosamente!", ButtonType.OK).showAndWait();
                         items.clear();

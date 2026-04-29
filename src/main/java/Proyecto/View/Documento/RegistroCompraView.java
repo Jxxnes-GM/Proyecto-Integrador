@@ -180,7 +180,7 @@ public class RegistroCompraView {
             double total = 0;
             for (var d : lista) {
                 detalles.add(new FilaDetalleCompra(
-                        d.getProducto().getNombre(),
+                        d.getProducto(),
                         d.getCantidad(),
                         d.getPrecioUnitario()));
                 total += d.getCantidad() * d.getPrecioUnitario();
