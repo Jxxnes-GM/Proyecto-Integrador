@@ -63,7 +63,7 @@
     <build>
         <plugins>
 
-            <!-- Compilador -->
+            <!-- 1. Compilador Java 21 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -74,7 +74,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin JavaFX: ejecutar con mvn javafx:run -->
+            <!-- 2. Plugin JavaFX: ejecutar con mvn javafx:run -->
             <plugin>
                 <groupId>org.openjfx</groupId>
                 <artifactId>javafx-maven-plugin</artifactId>
@@ -89,7 +89,7 @@
                 </executions>
             </plugin>
 
-            <!-- Fat JAR con todos los JARs y nativos incluidos -->
+            <!-- 3. Shade plugin: Fat JAR ejecutable SIN generar dependency-reduced-pom.xml -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -99,8 +99,8 @@
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
-                            <shadedClassifierName>fat</shadedClassifierName>
+                            <!-- ✅ Esta línea elimina la generación del dependency-reduced-pom.xml -->
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${main.class}</mainClass>
