@@ -1,16 +1,17 @@
 package Proyecto;
 
+import Proyecto.View.Usuario.LoginView;
+import javafx.application.Application;
+import javafx.stage.Stage;
 
-import Proyecto.View.usuario.LoginView;
+public class MainGUI extends Application {
 
-public class MainGUI {
+    @Override
+    public void start(Stage primaryStage) {
+        new LoginView(primaryStage);
+    }
 
     public static void main(String[] args) {
-
-        javax.swing.SwingUtilities.invokeLater(() -> {
-            LoginView login = new LoginView();
-            login.setVisible(true);
-        });
-
+        launch(args);
     }
 }

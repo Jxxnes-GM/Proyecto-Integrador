@@ -72,10 +72,9 @@ public class CarritoServices {
 
         // Agregar item
         boolean agregado = itemCarritoDAO.agregarItemAlCarrito(
-            carrito.getCliente().getId(),
-            idProducto,
-            cantidad
-        );
+                carrito.getCliente().getId(),
+                idProducto,
+                cantidad);
 
         if (agregado) {
             System.out.println("Producto agregado al carrito: " + producto.getNombre() + " x" + cantidad);
@@ -167,9 +166,9 @@ public class CarritoServices {
         double total = 0;
         for (ItemCarrito item : items) {
             resumen.append(item.getProducto().getNombre())
-                   .append(" x").append(item.getCantidad())
-                   .append(" - $").append(item.getSubtotal())
-                   .append("\n");
+                    .append(" x").append(item.getCantidad())
+                    .append(" - $").append(item.getSubtotal())
+                    .append("\n");
             total += item.getSubtotal();
         }
 
@@ -177,5 +176,21 @@ public class CarritoServices {
         resumen.append("TOTAL: $").append(total).append("\n");
 
         return resumen.toString();
+    }
+
+    // ── Alias de métodos para compatibilidad con vistas ────────────────────
+    public List<ItemCarrito> obtenerItemsCarrito(int idCliente) {
+        return obtenerItemsDelCarrito(idCliente);
+    }
+
+    public boolean eliminarItem(int idCliente, int idProducto) {
+        // Buscar el item del carrito que corresponde al cliente y producto
+        List<ItemCarrito> items = obtenerItemsDelCarrito(idCliente);
+        for (ItemCarrito item : items) {
+            if (item.getProducto().getIdProducto() == idProducto) {
+                return quitarProductoDelCarrito(item.getId());
+            }
+        }
+        return false;
     }
 }

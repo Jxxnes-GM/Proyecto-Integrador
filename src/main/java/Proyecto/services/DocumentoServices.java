@@ -1,14 +1,20 @@
 package Proyecto.services;
 
-
 import Proyecto.dao.DocumentoDAO;
 import Proyecto.dao.InventarioDAO;
 import Proyecto.dao.CarritoDAO;
 import Proyecto.dao.ItemCarritoDAO;
+import Proyecto.dao.PersonaDAO;
 import Proyecto.Model.Carrito;
 import Proyecto.Model.ItemCarrito;
+import Proyecto.Model.Compra;
+import Proyecto.Model.DetalleCompra;
+import Proyecto.Model.Venta;
+import Proyecto.Model.Cliente;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public class DocumentoServices {
 
@@ -35,17 +41,17 @@ public class DocumentoServices {
 
         // Calcular total
         double total = carrito.getTotal() - descuento;
-        if (total < 0) total = 0;
+        if (total < 0)
+            total = 0;
 
         // Crear documento (tipo 1 = Factura de venta)
         int idDocumento = documentoDAO.crearDocumento(
-            1,
-            idCliente,
-            idEmpleado,
-            descuento,
-            total,
-            observaciones
-        );
+                1,
+                idCliente,
+                idEmpleado,
+                descuento,
+                total,
+                observaciones);
 
         if (idDocumento != -1) {
             // Registrar movimientos de inventario y actualizar stock
@@ -53,12 +59,11 @@ public class DocumentoServices {
             for (ItemCarrito item : items) {
                 // Registrar movimiento
                 inventarioDAO.registrarMovimiento(
-                    idDocumento,
-                    item.getProducto().getIdProducto(),
-                    idEmpleado,
-                    item.getCantidad(),
-                    item.getSubtotal()
-                );
+                        idDocumento,
+                        item.getProducto().getIdProducto(),
+                        idEmpleado,
+                        item.getCantidad(),
+                        item.getSubtotal());
                 // Disminuir stock
                 inventarioDAO.actualizarStock(item.getProducto().getIdProducto(), -item.getCantidad());
             }
@@ -118,17 +123,18 @@ public class DocumentoServices {
             cantidadCompras++;
 
             reporte.append("─────────────────────────────────\n")
-                   .append("Documento: ").append(doc.get("idDocumento")).append("\n")
-                   .append("  Fecha: ").append(doc.get("fecha")).append("\n")
-                   .append("  Total: $").append(String.format("%.2f", total)).append("\n")
-                   .append("  Observaciones: ").append(doc.get("observaciones")).append("\n\n");
+                    .append("Documento: ").append(doc.get("idDocumento")).append("\n")
+                    .append("  Fecha: ").append(doc.get("fecha")).append("\n")
+                    .append("  Total: $").append(String.format("%.2f", total)).append("\n")
+                    .append("  Observaciones: ").append(doc.get("observaciones")).append("\n\n");
         }
 
         reporte.append("─────────────────────────────────\n");
         reporte.append("RESUMEN:\n");
         reporte.append("  Cantidad de compras: ").append(cantidadCompras).append("\n");
         reporte.append("  Total gastado: $").append(String.format("%.2f", totalGastado)).append("\n");
-        reporte.append("  Promedio por compra: $").append(String.format("%.2f", totalGastado / cantidadCompras)).append("\n");
+        reporte.append("  Promedio por compra: $").append(String.format("%.2f", totalGastado / cantidadCompras))
+                .append("\n");
 
         return reporte.toString();
     }
@@ -157,7 +163,8 @@ public class DocumentoServices {
         reporte.append("Total de documentos: ").append(cantidadDocumentos).append("\n");
         reporte.append("Total de ventas: $").append(String.format("%.2f", totalVentas)).append("\n");
         reporte.append("Total de descuentos: $").append(String.format("%.2f", totalDescuentos)).append("\n");
-        reporte.append("Venta promedio: $").append(String.format("%.2f", totalVentas / cantidadDocumentos)).append("\n");
+        reporte.append("Venta promedio: $").append(String.format("%.2f", totalVentas / cantidadDocumentos))
+                .append("\n");
 
         return reporte.toString();
     }
@@ -187,7 +194,7 @@ public class DocumentoServices {
 
         for (Map<String, Object> detalle : detalles) {
             factura.append("  Cantidad: ").append(detalle.get("cantidad")).append("\n")
-                   .append("  Subtotal: $").append(String.format("%.2f", detalle.get("subtotal"))).append("\n\n");
+                    .append("  Subtotal: $").append(String.format("%.2f", detalle.get("subtotal"))).append("\n\n");
         }
 
         factura.append("─────────────────────────────────\n");
@@ -196,5 +203,50 @@ public class DocumentoServices {
         factura.append("Observaciones: ").append(documento.get("observaciones")).append("\n");
 
         return factura.toString();
+    }
+
+    // ── Alias de métodos para compatibilidad con vistas ────────────────────
+    public int registrarCompra(int idCliente) {
+        // Asumimos que el empleado es 1 por defecto (puede ajustarse)
+        return crearDocumentoVenta(idCliente, 1, 0, "");
+    }
+
+    public List<Compra> obtenerComprasCliente(int idCliente) {
+        List<Map<String, Object>> mapas = obtenerDocumentosDelCliente(idCliente);
+        return mapas.stream()
+                .map(Compra::fromMap)
+                .collect(Collectors.toList());
+    }
+
+    public List<DetalleCompra> obtenerDetalleCompra(int idCompra) {
+        List<Map<String, Object>> mapas = obtenerDetallesDocumento(idCompra);
+        return mapas.stream()
+                .map(DetalleCompra::fromMap)
+                .collect(Collectors.toList());
+    }
+
+    public List<Venta> obtenerTodasLasVentas() {
+        List<Map<String, Object>> documentos = obtenerTodosLosDocumentos();
+        PersonaDAO personaDAO = new PersonaDAO();
+
+        return documentos.stream()
+                .map(doc -> {
+                    int idCliente = ((Number) doc.get("idPersona")).intValue();
+                    Cliente cliente = personaDAO.obtenerClientePorId(idCliente);
+                    return Venta.fromMap(doc, cliente);
+                })
+                .collect(Collectors.toList());
+    }
+
+    public List<Venta> obtenerVentasPorRango(LocalDate fechaInicio, LocalDate fechaFin) {
+        List<Venta> todas = obtenerTodasLasVentas();
+
+        return todas.stream()
+                .filter(venta -> !venta.getFecha().isBefore(fechaInicio) && !venta.getFecha().isAfter(fechaFin))
+                .collect(Collectors.toList());
+    }
+
+    public String generarReporteVentas() {
+        return generarReporteVentasTotales();
     }
 }
