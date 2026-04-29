@@ -4,6 +4,7 @@ import Proyecto.Model.Cliente;
 import Proyecto.services.PersonaServices;
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
 
 public class LoginView extends JFrame {
     
@@ -31,16 +32,37 @@ public class LoginView extends JFrame {
         JPanel mainPanel = new JPanel(new BorderLayout());
         mainPanel.setBackground(new Color(10, 25, 47));
         
-        // Panel izquierdo (logo)
+        // Panel izquierdo (logo/imagen)
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setBackground(new Color(10, 25, 47));
         leftPanel.setPreferredSize(new Dimension(450, 0));
         
+        // Cargar imagen del logo desde archivo local
         JLabel lblLogo = new JLabel();
-        lblLogo.setText("TECHZONE\nGADGETS & HOBBIES");
-        lblLogo.setFont(new Font("Arial", Font.BOLD, 28));
-        lblLogo.setForeground(new Color(0, 200, 255));
         lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
+        
+        // Ruta de la imagen en la carpeta source
+        File archivoLogo = new File("src/main/resources/logo.jpg");
+        
+        if (archivoLogo.exists()) {
+            try {
+                ImageIcon iconoOriginal = new ImageIcon(archivoLogo.getAbsolutePath());
+                Image imagenRedimensionada = iconoOriginal.getImage().getScaledInstance(300, 300, Image.SCALE_SMOOTH);
+                lblLogo.setIcon(new ImageIcon(imagenRedimensionada));
+                System.out.println("Logo cargado correctamente desde: " + archivoLogo.getAbsolutePath());
+            } catch (Exception e) {
+                System.err.println("Error al cargar la imagen: " + e.getMessage());
+                lblLogo.setText("<html><div style='text-align: center;'>TECHZONE<br>GADGETS & HOBBIES</div></html>");
+                lblLogo.setFont(new Font("Arial", Font.BOLD, 24));
+                lblLogo.setForeground(new Color(0, 200, 255));
+            }
+        } else {
+            System.err.println("No se encontró el archivo logo.jpg en: " + archivoLogo.getAbsolutePath());
+            lblLogo.setText("<html><div style='text-align: center;'>TECHZONE<br>GADGETS & HOBBIES</div></html>");
+            lblLogo.setFont(new Font("Arial", Font.BOLD, 24));
+            lblLogo.setForeground(new Color(0, 200, 255));
+        }
+        
         leftPanel.add(lblLogo);
         
         // Panel derecho (formulario)
@@ -160,7 +182,6 @@ public class LoginView extends JFrame {
         return btnSalir;
     }
     
-    // Métodos utilitarios
     public void mostrarMensaje(String mensaje) {
         JOptionPane.showMessageDialog(this, mensaje);
     }

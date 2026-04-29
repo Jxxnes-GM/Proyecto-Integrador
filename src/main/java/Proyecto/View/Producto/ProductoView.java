@@ -2,6 +2,7 @@ package Proyecto.View.Producto;
 
 import Proyecto.Model.Producto;
 import Proyecto.services.ProductoServices;
+
 import javax.swing.*;
 import javax.swing.table.*;
 import java.awt.*;
