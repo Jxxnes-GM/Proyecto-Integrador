@@ -1,182 +1,209 @@
-package Proyecto.View.usuario;
+package Proyecto.View.Usuario;
 
 import Proyecto.Model.Cliente;
 import Proyecto.services.PersonaServices;
-import javax.swing.*;
-import java.awt.*;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
+import javafx.stage.Stage;
 
-public class LoginView extends JFrame {
-    
-    private JTextField txtEmail;
-    private JPasswordField txtPassword;
-    private JButton btnLogin;
-    private JButton btnRegistro;
-    private JButton btnSalir;
-    
+public class LoginView extends Application {
+
+    private TextField txtEmail;
+    private PasswordField txtPassword;
+    private Button btnLogin;
+    private Button btnRegistro;
+    private Button btnSalir;
+
     private PersonaServices personaServices;
-    
+    private Stage stage;
+
+    // Constructor por defecto para JavaFX Application
     public LoginView() {
         this.personaServices = new PersonaServices();
-        initComponents();
     }
-    
-    private void initComponents() {
-        setTitle("TechZone - Iniciar Sesión");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(900, 600);
-        setLocationRelativeTo(null);
-        setResizable(false);
-        
-        // Panel principal con color de fondo
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(new Color(10, 25, 47));
-        
-        // Panel izquierdo (logo)
-        JPanel leftPanel = new JPanel(new GridBagLayout());
-        leftPanel.setBackground(new Color(10, 25, 47));
-        leftPanel.setPreferredSize(new Dimension(450, 0));
-        
-        JLabel lblLogo = new JLabel();
-        lblLogo.setText("TECHZONE\nGADGETS & HOBBIES");
-        lblLogo.setFont(new Font("Arial", Font.BOLD, 28));
-        lblLogo.setForeground(new Color(0, 200, 255));
-        lblLogo.setHorizontalAlignment(SwingConstants.CENTER);
-        leftPanel.add(lblLogo);
-        
-        // Panel derecho (formulario)
-        JPanel rightPanel = new JPanel(new GridBagLayout());
-        rightPanel.setBackground(new Color(15, 30, 55));
-        rightPanel.setBorder(BorderFactory.createEmptyBorder(50, 50, 50, 50));
-        
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(10, 10, 10, 10);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        
+
+    @Override
+    public void start(Stage primaryStage) {
+        this.stage = primaryStage;
+        initComponents(primaryStage);
+    }
+
+    // Constructor alternativo para uso sin Application.launch()
+    public LoginView(Stage stage) {
+        this.personaServices = new PersonaServices();
+        this.stage = stage;
+        initComponents(stage);
+    }
+
+    private void initComponents(Stage stage) {
+        stage.setTitle("TechZone - Iniciar Sesión");
+        stage.setResizable(false);
+
+        // ── Panel izquierdo (logo) ───────────────────────────────────────────
+        VBox leftPanel = new VBox();
+        leftPanel.setAlignment(Pos.CENTER);
+        leftPanel.setPrefWidth(450);
+        leftPanel.setStyle("-fx-background-color: #0A1933;");
+
+        Label lblLogo = new Label("TECHZONE");
+        lblLogo.setFont(Font.font("Arial", FontWeight.BOLD, 36));
+        lblLogo.setTextFill(Color.web("#00C8FF"));
+
+        Label lblSub = new Label("GADGETS & HOBBIES");
+        lblSub.setFont(Font.font("Arial", FontWeight.NORMAL, 16));
+        lblSub.setTextFill(Color.web("#00C8FF"));
+
+        leftPanel.getChildren().addAll(lblLogo, lblSub);
+
+        // ── Panel derecho (formulario) ───────────────────────────────────────
+        GridPane rightPanel = new GridPane();
+        rightPanel.setAlignment(Pos.CENTER);
+        rightPanel.setHgap(10);
+        rightPanel.setVgap(15);
+        rightPanel.setPadding(new Insets(50));
+        rightPanel.setStyle("-fx-background-color: #0F1E37;");
+
         // Título
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2;
-        JLabel lblTitulo = new JLabel("INICIAR SESIÓN");
-        lblTitulo.setFont(new Font("Arial", Font.BOLD, 24));
-        lblTitulo.setForeground(Color.WHITE);
-        lblTitulo.setHorizontalAlignment(SwingConstants.CENTER);
-        rightPanel.add(lblTitulo, gbc);
-        
+        Label lblTitulo = new Label("INICIAR SESIÓN");
+        lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        lblTitulo.setTextFill(Color.WHITE);
+        lblTitulo.setTextAlignment(TextAlignment.CENTER);
+        GridPane.setColumnSpan(lblTitulo, 2);
+        GridPane.setHalignment(lblTitulo, javafx.geometry.HPos.CENTER);
+        rightPanel.add(lblTitulo, 0, 0);
+
         // Email
-        gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        JLabel lblEmail = new JLabel("Correo Electrónico:");
-        lblEmail.setForeground(Color.WHITE);
-        lblEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-        rightPanel.add(lblEmail, gbc);
-        
-        gbc.gridx = 1;
-        txtEmail = new JTextField(20);
-        txtEmail.setFont(new Font("Arial", Font.PLAIN, 14));
-        txtEmail.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 200, 255)),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-        rightPanel.add(txtEmail, gbc);
-        
+        Label lblEmail = new Label("Correo Electrónico:");
+        lblEmail.setTextFill(Color.WHITE);
+        lblEmail.setFont(Font.font("Arial", 14));
+        rightPanel.add(lblEmail, 0, 1);
+
+        txtEmail = new TextField();
+        txtEmail.setPrefWidth(250);
+        txtEmail.setFont(Font.font("Arial", 14));
+        txtEmail.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-border-color: #00C8FF;" +
+                        "-fx-border-width: 1.5;" +
+                        "-fx-padding: 8;");
+        rightPanel.add(txtEmail, 1, 1);
+
         // Contraseña
-        gbc.gridy = 2;
-        gbc.gridx = 0;
-        JLabel lblPassword = new JLabel("Contraseña:");
-        lblPassword.setForeground(Color.WHITE);
-        lblPassword.setFont(new Font("Arial", Font.PLAIN, 14));
-        rightPanel.add(lblPassword, gbc);
-        
-        gbc.gridx = 1;
-        txtPassword = new JPasswordField(20);
-        txtPassword.setFont(new Font("Arial", Font.PLAIN, 14));
-        txtPassword.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(0, 200, 255)),
-            BorderFactory.createEmptyBorder(8, 8, 8, 8)
-        ));
-        rightPanel.add(txtPassword, gbc);
-        
+        Label lblPassword = new Label("Contraseña:");
+        lblPassword.setTextFill(Color.WHITE);
+        lblPassword.setFont(Font.font("Arial", 14));
+        rightPanel.add(lblPassword, 0, 2);
+
+        txtPassword = new PasswordField();
+        txtPassword.setPrefWidth(250);
+        txtPassword.setFont(Font.font("Arial", 14));
+        txtPassword.setStyle(
+                "-fx-background-color: white;" +
+                        "-fx-border-color: #00C8FF;" +
+                        "-fx-border-width: 1.5;" +
+                        "-fx-padding: 8;");
+        rightPanel.add(txtPassword, 1, 2);
+
         // Botones
-        gbc.gridy = 3;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
-        buttonPanel.setBackground(new Color(15, 30, 55));
-        
-        btnLogin = new JButton("INGRESAR");
-        btnLogin.setBackground(new Color(0, 200, 255));
-        btnLogin.setForeground(Color.WHITE);
-        btnLogin.setFont(new Font("Arial", Font.BOLD, 14));
-        btnLogin.setPreferredSize(new Dimension(130, 40));
-        btnLogin.setBorderPainted(false);
-        btnLogin.setFocusPainted(false);
-        
-        btnRegistro = new JButton("REGISTRARSE");
-        btnRegistro.setBackground(new Color(50, 50, 70));
-        btnRegistro.setForeground(Color.WHITE);
-        btnRegistro.setFont(new Font("Arial", Font.BOLD, 14));
-        btnRegistro.setPreferredSize(new Dimension(130, 40));
-        btnRegistro.setBorderPainted(false);
-        btnRegistro.setFocusPainted(false);
-        
-        btnSalir = new JButton("SALIR");
-        btnSalir.setBackground(new Color(200, 60, 60));
-        btnSalir.setForeground(Color.WHITE);
-        btnSalir.setFont(new Font("Arial", Font.BOLD, 14));
-        btnSalir.setPreferredSize(new Dimension(130, 40));
-        btnSalir.setBorderPainted(false);
-        btnSalir.setFocusPainted(false);
-        
-        buttonPanel.add(btnLogin);
-        buttonPanel.add(btnRegistro);
-        buttonPanel.add(btnSalir);
-        rightPanel.add(buttonPanel, gbc);
-        
-        mainPanel.add(leftPanel, BorderLayout.WEST);
-        mainPanel.add(rightPanel, BorderLayout.CENTER);
-        
-        add(mainPanel);
+        btnLogin = crearBoton("INGRESAR", "#00C8FF");
+        btnRegistro = crearBoton("REGISTRARSE", "#323246");
+        btnSalir = crearBoton("SALIR", "#C83C3C");
+
+        HBox buttonBox = new HBox(15, btnLogin, btnRegistro, btnSalir);
+        buttonBox.setAlignment(Pos.CENTER);
+        GridPane.setColumnSpan(buttonBox, 2);
+        rightPanel.add(buttonBox, 0, 3);
+
+        // Acción salir por defecto
+        btnSalir.setOnAction(e -> stage.close());
+
+        // ── Layout principal ─────────────────────────────────────────────────
+        HBox mainPanel = new HBox(leftPanel, rightPanel);
+        HBox.setHgrow(rightPanel, Priority.ALWAYS);
+
+        Scene scene = new Scene(mainPanel, 900, 600);
+        stage.setScene(scene);
+        stage.show();
     }
-    
-    // Getters
+
+    private Button crearBoton(String texto, String colorHex) {
+        Button btn = new Button(texto);
+        btn.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        btn.setTextFill(Color.WHITE);
+        btn.setPrefSize(130, 40);
+        btn.setStyle(
+                "-fx-background-color: " + colorHex + ";" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;");
+
+        // Efecto hover
+        String hoverColor = colorHex.equals("#00C8FF") ? "#009DBF"
+                : colorHex.equals("#C83C3C") ? "#A03030"
+                        : "#222232";
+        btn.setOnMouseEntered(e -> btn.setStyle(
+                "-fx-background-color: " + hoverColor + ";" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;"));
+        btn.setOnMouseExited(e -> btn.setStyle(
+                "-fx-background-color: " + colorHex + ";" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;"));
+        return btn;
+    }
+
+    // ── Getters ──────────────────────────────────────────────────────────────
     public String getEmail() {
         return txtEmail.getText().trim();
     }
-    
+
     public String getPassword() {
-        return new String(txtPassword.getPassword());
+        return txtPassword.getText();
     }
-    
-    public JButton getBtnLogin() {
+
+    public Button getBtnLogin() {
         return btnLogin;
     }
-    
-    public JButton getBtnRegistro() {
+
+    public Button getBtnRegistro() {
         return btnRegistro;
     }
-    
-    public JButton getBtnSalir() {
+
+    public Button getBtnSalir() {
         return btnSalir;
     }
-    
-    // Métodos utilitarios
+
+    // ── Métodos utilitarios ──────────────────────────────────────────────────
     public void mostrarMensaje(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje);
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, mensaje, ButtonType.OK);
+        alert.showAndWait();
     }
-    
+
     public void mostrarError(String mensaje) {
-        JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
+        Alert alert = new Alert(Alert.AlertType.ERROR, mensaje, ButtonType.OK);
+        alert.setTitle("Error");
+        alert.showAndWait();
     }
-    
+
     public void limpiarCampos() {
-        txtEmail.setText("");
-        txtPassword.setText("");
+        txtEmail.clear();
+        txtPassword.clear();
     }
-    
+
     public void abrirMenuPrincipal(Cliente cliente) {
-        MenuPrincipalView menuView = new MenuPrincipalView(cliente);
-        menuView.setVisible(true);
-        this.dispose();
+        Stage menuStage = new Stage();
+        new MenuPrincipalView(cliente, menuStage);
+        stage.close();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
