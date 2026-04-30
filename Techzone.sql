@@ -476,7 +476,52 @@ INSERT INTO producto (id_categoria, nombre, precio_compra, precio_venta, stock_a
     (1, 'Laptop ASUS VivoBook 15',    2200000, 2800000, 10, 3),
     (2, 'Samsung Galaxy A55',         1100000, 1400000, 15, 5),
     (3, 'Mouse Logitech MX Master 3',  180000,  250000, 30, 8);
+ 
+ --  Asignar contraseña a Laura Gómez (cliente de prueba)
+--             Password elegida: laura123
+--             SHA-256('laura123') = 5a797e04dd084f9e9502d0e0e54d0a0996bc9d13e14fbf1613425a8bb4b448ce
+-- -----------------------------------------------------------------------------
+    UPDATE cliente
+SET contrasena_hash = SHA2('laura123', 256)
+WHERE id_persona = (
+    SELECT id_persona FROM persona WHERE email = 'laura@gmail.com'
+);
+
+-- Verificar que quedó bien
+SELECT p.nombres, p.apellidos, p.email, c.contrasena_hash
+FROM persona p
+JOIN cliente c ON p.id_persona = c.id_persona
+WHERE p.email = 'admin@techzone.co';
+
+-- Solo insertar si no existe
+INSERT IGNORE INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('CLIENTE', 'Admin', 'TechZone', '99999', 'admin@techzone.co', 1);
+
+INSERT IGNORE INTO cliente (id_persona, contrasena_hash)
+SELECT id_persona, SHA2('techzone', 256)
+FROM persona WHERE documento = '99999';
+
+
+-- — Crear vista compatible con el DAO
+CREATE OR REPLACE VIEW vista_persona_cliente AS
+SELECT
+    p.id_persona,
+    p.nombres      AS nombre,       -- alias que el DAO busca con getString("nombre")
+    p.apellidos    AS apellido,     -- alias que el DAO busca con getString("apellido")
+    p.documento,
+    p.telefono,
+    p.email,
+    p.direccion,
+    p.activo,
+    c.contrasena_hash
+FROM persona p
+JOIN cliente c ON p.id_persona = c.id_persona
+WHERE p.tipo = 'CLIENTE' AND p.activo = 1;
+
+-- Verificar la vista
+SELECT * FROM vista_persona_cliente;
 
 -- =============================================================================
 -- FIN DEL SCRIPT CORREGIDO
 -- =============================================================================
+

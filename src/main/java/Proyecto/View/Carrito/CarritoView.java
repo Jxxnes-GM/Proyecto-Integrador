@@ -1,7 +1,6 @@
 package Proyecto.View.Carrito;
 
 import Proyecto.Model.Cliente;
-import Proyecto.Model.Producto;
 import Proyecto.services.CarritoServices;
 import Proyecto.services.DocumentoServices;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -56,13 +55,14 @@ public class CarritoView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        Label lblTitulo = new Label("🛒  Mi Carrito de Compras");
+        Label lblTitulo = new Label(" Mi Carrito de Compras");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
         // Tabla
         tabla = new TableView<>(items);
-        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        //  Correcto para JavaFX 21
+        tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tabla, Priority.ALWAYS);
 
         TableColumn<ItemCarrito, String> colNombre = new TableColumn<>("Producto");
@@ -95,7 +95,7 @@ public class CarritoView {
         TableColumn<ItemCarrito, Void> colAcciones = new TableColumn<>("Acciones");
         colAcciones.setMaxWidth(120);
         colAcciones.setCellFactory(col -> new TableCell<>() {
-            private final Button btnElim = boton("🗑 Eliminar", "#C83C3C");
+            private final Button btnElim = boton(" Eliminar", "#C83C3C");
             {
                 btnElim.setOnAction(e -> {
                     ItemCarrito item = getTableView().getItems().get(getIndex());
@@ -128,8 +128,8 @@ public class CarritoView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button btnVaciar = boton("🗑 Vaciar", "#646464");
-        Button btnComprar = boton("✔ Finalizar Compra", "#00C8FF");
+        Button btnVaciar = boton(" Vaciar", "#646464");
+        Button btnComprar = boton(" Finalizar Compra", "#00C8FF");
 
         btnVaciar.setOnAction(e -> vaciarCarrito());
         btnComprar.setOnAction(e -> finalizarCompra());

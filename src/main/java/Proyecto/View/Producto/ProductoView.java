@@ -72,7 +72,7 @@ public class ProductoView {
                         "-fx-border-width: 1;" +
                         "-fx-padding: 8;");
 
-        Button btnBuscar = crearBoton("🔍 Buscar", "#00C8FF");
+        Button btnBuscar = crearBoton(" Buscar", "#00C8FF");
         btnBuscar.setOnAction(e -> buscarProductos());
 
         topPanel.getChildren().addAll(lblTitulo, spacer, txtBuscar, btnBuscar);
@@ -80,7 +80,8 @@ public class ProductoView {
         // ── Tabla ─────────────────────────────────────────────────────────
         tablaProductos = new TableView<>();
         tablaProductos.setItems(datos);
-        tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // Correcto para JavaFX 21
+tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaProductos, Priority.ALWAYS);
 
         TableColumn<FilaProducto, Integer> colId = new TableColumn<>("ID");
@@ -135,7 +136,7 @@ public class ProductoView {
         // ── Panel inferior ────────────────────────────────────────────────
         HBox bottomPanel = new HBox();
         bottomPanel.setAlignment(Pos.CENTER);
-        Button btnActualizar = crearBoton("🔄 Actualizar", "#646464");
+        Button btnActualizar = crearBoton(" Actualizar", "#646464");
         btnActualizar.setOnAction(e -> cargarProductos());
         bottomPanel.getChildren().add(btnActualizar);
 

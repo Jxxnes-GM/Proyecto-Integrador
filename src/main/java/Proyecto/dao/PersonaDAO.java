@@ -53,7 +53,7 @@ public class PersonaDAO {
 
     // Obtener cliente por email (para login)
     public Cliente obtenerClientePorEmail(String email) {
-        String sql = "SELECT * FROM persona WHERE email = ?";
+        String sql = "SELECT * FROM vista_persona_cliente WHERE email = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
                 PreparedStatement pstmt = conexion.prepareStatement(sql)) {
