@@ -107,7 +107,8 @@ public class RegistroVentasView {
 
         // ── Tabla de ventas ───────────────────────────────────────────────
         tablaVentas = new TableView<>(ventas);
-        tablaVentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // ✅ Correcto para JavaFX 21
+        tablaVentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaVentas, Priority.ALWAYS);
 
         TableColumn<FilaVenta, Integer> colId = new TableColumn<>("N° Venta");

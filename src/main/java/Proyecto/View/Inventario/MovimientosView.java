@@ -54,7 +54,7 @@ public class MovimientosView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        Label lblTitulo = new Label("📦  Movimientos de Inventario");
+        Label lblTitulo = new Label(" Movimientos de Inventario");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
@@ -67,9 +67,9 @@ public class MovimientosView {
         lblTotalAlertas = new Label("0");
 
         statsRow.getChildren().addAll(
-                tarjeta("📥 Entradas", lblTotalEntradas, "#1A8A2A"),
-                tarjeta("📤 Salidas", lblTotalSalidas, "#C8820A"),
-                tarjeta("⚠ Stock Bajo", lblTotalAlertas, "#C83C3C"));
+                tarjeta(" Entradas", lblTotalEntradas, "#1A8A2A"),
+                tarjeta(" Salidas", lblTotalSalidas, "#C8820A"),
+                tarjeta(" Stock Bajo", lblTotalAlertas, "#C83C3C"));
 
         // ── Filtros y acciones ────────────────────────────────────────────
         HBox filtros = new HBox(12);
@@ -80,9 +80,9 @@ public class MovimientosView {
         cbTipoFiltro.getSelectionModel().selectFirst();
         cbTipoFiltro.setStyle("-fx-font-size: 12px;");
 
-        Button btnFiltrar = boton("🔍 Filtrar", "#00C8FF");
-        Button btnAlertas = boton("⚠ Ver Alertas", "#C83C3C");
-        Button btnRegistrar = boton("➕ Registrar Movimiento", "#0A1933");
+        Button btnFiltrar = boton(" Filtrar", "#00C8FF");
+        Button btnAlertas = boton(" Ver Alertas", "#C83C3C");
+        Button btnRegistrar = boton(" Registrar Movimiento", "#0A1933");
 
         btnFiltrar.setOnAction(e -> filtrarMovimientos());
         btnAlertas.setOnAction(e -> mostrarPanelAlertas());
@@ -104,7 +104,8 @@ public class MovimientosView {
 
         // ── Tabla de movimientos ──────────────────────────────────────────
         tablaMovimientos = new TableView<>(movimientos);
-        tablaMovimientos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        //  Correcto para JavaFX 21
+        tablaMovimientos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaMovimientos, Priority.ALWAYS);
 
         TableColumn<FilaMovimiento, Integer> colId = new TableColumn<>("N°");
@@ -155,7 +156,8 @@ public class MovimientosView {
 
         // ── Panel de alertas (oculto por defecto) ─────────────────────────
         tablaAlertas = new TableView<>(alertas);
-        tablaAlertas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        //  Correcto para JavaFX 21
+        tablaAlertas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaAlertas.setPrefHeight(150);
         tablaAlertas.setVisible(false);
         tablaAlertas.setManaged(false);
@@ -189,7 +191,7 @@ public class MovimientosView {
 
         tablaAlertas.getColumns().addAll(colAlProd, colAlStock, colAlMin, colAlNivel);
 
-        Label lblAlertas = new Label("⚠  Productos con Stock Bajo:");
+        Label lblAlertas = new Label(" Productos con Stock Bajo:");
         lblAlertas.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         lblAlertas.setTextFill(Color.web("#C83C3C"));
         lblAlertas.setVisible(false);

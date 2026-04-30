@@ -54,13 +54,14 @@ public class RegistroCompraView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        Label lblTitulo = new Label("📄  Historial de Compras");
+        Label lblTitulo = new Label("  Historial de Compras");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
         // ── Tabla principal de compras ────────────────────────────────────
         tablaCompras = new TableView<>(compras);
-        tablaCompras.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        //  Correcto para JavaFX 21
+        tablaCompras.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaCompras.setPrefHeight(220);
 
         TableColumn<FilaCompra, Integer> colId = new TableColumn<>("N° Compra");
@@ -107,7 +108,8 @@ public class RegistroCompraView {
         lblDetalle.setTextFill(Color.web("#323232"));
 
         tablaDetalle = new TableView<>(detalles);
-        tablaDetalle.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // Correcto para JavaFX 21
+        tablaDetalle.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaDetalle.setPrefHeight(160);
         VBox.setVgrow(tablaDetalle, Priority.ALWAYS);
 
@@ -140,7 +142,7 @@ public class RegistroCompraView {
         lblResumen.setFont(Font.font("Arial", 13));
         lblResumen.setTextFill(Color.GRAY);
 
-        Button btnExportar = boton("📥 Exportar Reporte", "#00C8FF");
+        Button btnExportar = boton(" Exportar Reporte", "#00C8FF");
         btnExportar.setOnAction(e -> exportarReporte());
 
         HBox footerRow = new HBox(20, lblResumen, new Region() {
