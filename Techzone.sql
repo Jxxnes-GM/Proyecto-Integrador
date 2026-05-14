@@ -1,18 +1,5 @@
--- =============================================================================
--- PROYECTO INTEGRADOR - TECHZONE
--- Modelo Entidad Relación - MySQL Workbench
--- VERSIÓN CORREGIDA
---   CORRECCIÓN 1: INSERT cliente/proveedor usan subconsulta en vez de id fijo
---   CORRECCIÓN 2: sp_registrar_venta — bloque etiquetado "sp_bloque:" añadido
--- =============================================================================
-
-DROP DATABASE IF EXISTS techzone;
 CREATE DATABASE techzone CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE techzone;
-
--- =============================================================================
--- 1. TABLAS DE SOPORTE / CATÁLOGOS
--- =============================================================================
 
 CREATE TABLE categoria (
     id_categoria   INT          NOT NULL AUTO_INCREMENT,
@@ -45,10 +32,6 @@ INSERT INTO tipo_documento (descripcion, efecto_en_inventario) VALUES
     ('Ajuste de Inventario (Entrada)',     +1),
     ('Ajuste de Inventario (Salida)',      -1),
     ('Baja por mercancía en mal estado',   -1);
-
--- =============================================================================
--- 2. PERSONAS: CLIENTES, EMPLEADOS, PROVEEDORES
--- =============================================================================
 
 CREATE TABLE cargo (
     id_cargo    INT         NOT NULL AUTO_INCREMENT,
@@ -99,10 +82,6 @@ CREATE TABLE proveedor (
     CONSTRAINT fk_proveedor_persona FOREIGN KEY (id_persona) REFERENCES persona(id_persona)
 );
 
--- =============================================================================
--- 3. CATÁLOGO DE PRODUCTOS
--- =============================================================================
-
 CREATE TABLE producto (
     id_producto      INT            NOT NULL AUTO_INCREMENT,
     id_categoria     INT            NOT NULL,
@@ -117,18 +96,14 @@ CREATE TABLE producto (
     CONSTRAINT fk_producto_categoria FOREIGN KEY (id_categoria) REFERENCES categoria(id_categoria)
 );
 
--- =============================================================================
--- 4. DOCUMENTO
--- =============================================================================
-
 CREATE TABLE documento (
     id_documento       INT            NOT NULL AUTO_INCREMENT,
     id_tipo_documento  INT            NOT NULL,
-    id_persona         INT            NOT NULL  COMMENT 'Cliente o Proveedor según tipo',
-    id_empleado        INT            COMMENT 'Empleado que registra el documento',
+    id_persona         INT            NOT NULL,
+    id_empleado        INT,
     id_metodo_pago     INT,
     fecha_documento    DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    numero_doc_externo VARCHAR(60)    COMMENT 'Nro. factura del proveedor o serie interna',
+    numero_doc_externo VARCHAR(60),
     subtotal           DECIMAL(14,2)  NOT NULL DEFAULT 0,
     descuento          DECIMAL(14,2)  NOT NULL DEFAULT 0,
     total              DECIMAL(14,2)  NOT NULL DEFAULT 0,
@@ -140,15 +115,11 @@ CREATE TABLE documento (
     CONSTRAINT fk_doc_metpago   FOREIGN KEY (id_metodo_pago)    REFERENCES metodo_pago(id_metodo_pago)
 );
 
--- =============================================================================
--- 5. MOVIMIENTO_INVENTARIO
--- =============================================================================
-
 CREATE TABLE movimiento_inventario (
     id_movimiento      INT            NOT NULL AUTO_INCREMENT,
-    id_documento       INT            NOT NULL  COMMENT 'FK a documento (venta o compra)',
+    id_documento       INT            NOT NULL,
     id_producto        INT            NOT NULL,
-    id_empleado        INT            NOT NULL  COMMENT 'Bodeguero que registra',
+    id_empleado        INT            NOT NULL,
     cantidad           INT            NOT NULL,
     precio_unitario    DECIMAL(12,2)  NOT NULL,
     subtotal_linea     DECIMAL(14,2)  GENERATED ALWAYS AS (cantidad * precio_unitario) STORED,
@@ -159,10 +130,6 @@ CREATE TABLE movimiento_inventario (
     CONSTRAINT fk_mov_empleado   FOREIGN KEY (id_empleado)  REFERENCES empleado(id_persona)
 );
 
--- =============================================================================
--- 6. CARRITO DE COMPRAS
--- =============================================================================
-
 CREATE TABLE carrito (
     id_carrito   INT       NOT NULL AUTO_INCREMENT,
     id_cliente   INT       NOT NULL,
@@ -172,10 +139,10 @@ CREATE TABLE carrito (
 );
 
 CREATE TABLE item_carrito (
-    id_item      INT           NOT NULL AUTO_INCREMENT,
-    id_carrito   INT           NOT NULL,
-    id_producto  INT           NOT NULL,
-    cantidad     INT           NOT NULL DEFAULT 1,
+    id_item      INT  NOT NULL AUTO_INCREMENT,
+    id_carrito   INT  NOT NULL,
+    id_producto  INT  NOT NULL,
+    cantidad     INT  NOT NULL DEFAULT 1,
     PRIMARY KEY (id_item),
     CONSTRAINT fk_item_carrito  FOREIGN KEY (id_carrito)  REFERENCES carrito(id_carrito),
     CONSTRAINT fk_item_producto FOREIGN KEY (id_producto) REFERENCES producto(id_producto),
@@ -183,16 +150,19 @@ CREATE TABLE item_carrito (
 );
 
 -- =============================================================================
--- 7. PROCEDIMIENTOS ALMACENADOS
+-- PROCEDIMIENTOS ALMACENADOS
 -- =============================================================================
 
 DELIMITER $$
 
--- ---------------------------------------------------------------------------
--- SP 1: Registrar una Factura de Venta con sus líneas de movimiento
--- CORRECCIÓN: Se añade la etiqueta "sp_bloque:" al BEGIN para que el
---             LEAVE sp_bloque funcione correctamente
--- ---------------------------------------------------------------------------
+-- SP 1: Registrar Venta
+-- Crea el documento de venta, verifica stock de cada producto recibido en JSON
+-- y registra los movimientos de inventario descontando el stock. Usa transacción
+-- atómica: si falta stock en algún producto, se hace ROLLBACK completo.
+-- IN:  p_id_cliente, p_id_empleado, p_id_metodo_pago, p_productos_json
+--      JSON esperado: [{"id":1,"qty":2,"precio":2800000}, ...]
+-- OUT: p_id_documento (-1 si falla), p_mensaje
+
 CREATE PROCEDURE sp_registrar_venta (
     IN  p_id_cliente      INT,
     IN  p_id_empleado     INT,
@@ -201,14 +171,14 @@ CREATE PROCEDURE sp_registrar_venta (
     OUT p_id_documento    INT,
     OUT p_mensaje         VARCHAR(255)
 )
-sp_bloque: BEGIN                          -- ✅ CORRECCIÓN: etiqueta añadida
-    DECLARE v_total        DECIMAL(14,2) DEFAULT 0;
-    DECLARE v_idx          INT DEFAULT 0;
-    DECLARE v_count        INT;
-    DECLARE v_id_prod      INT;
-    DECLARE v_qty          INT;
-    DECLARE v_precio       DECIMAL(12,2);
-    DECLARE v_stock        INT;
+sp_bloque: BEGIN
+    DECLARE v_total   DECIMAL(14,2) DEFAULT 0;
+    DECLARE v_idx     INT DEFAULT 0;
+    DECLARE v_count   INT;
+    DECLARE v_id_prod INT;
+    DECLARE v_qty     INT;
+    DECLARE v_precio  DECIMAL(12,2);
+    DECLARE v_stock   INT;
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -229,11 +199,12 @@ sp_bloque: BEGIN                          -- ✅ CORRECCIÓN: etiqueta añadida
         SET v_precio  = JSON_UNQUOTE(JSON_EXTRACT(p_productos_json, CONCAT('$[', v_idx, '].precio')));
 
         SELECT stock_actual INTO v_stock FROM producto WHERE id_producto = v_id_prod FOR UPDATE;
+
         IF v_stock < v_qty THEN
             SET p_mensaje = CONCAT('Stock insuficiente para producto id=', v_id_prod);
             ROLLBACK;
             SET p_id_documento = -1;
-            LEAVE sp_bloque;              -- ✅ Ahora funciona porque el bloque tiene etiqueta
+            LEAVE sp_bloque;
         END IF;
 
         INSERT INTO movimiento_inventario (id_documento, id_producto, id_empleado, cantidad, precio_unitario, fecha_movimiento)
@@ -242,7 +213,7 @@ sp_bloque: BEGIN                          -- ✅ CORRECCIÓN: etiqueta añadida
         UPDATE producto SET stock_actual = stock_actual - v_qty WHERE id_producto = v_id_prod;
 
         SET v_total = v_total + (v_qty * v_precio);
-        SET v_idx = v_idx + 1;
+        SET v_idx   = v_idx + 1;
     END WHILE;
 
     UPDATE documento SET total = v_total, subtotal = v_total WHERE id_documento = p_id_documento;
@@ -251,9 +222,14 @@ sp_bloque: BEGIN                          -- ✅ CORRECCIÓN: etiqueta añadida
     SET p_mensaje = 'Venta registrada exitosamente.';
 END$$
 
--- ---------------------------------------------------------------------------
--- SP 2: Registrar una Compra a Proveedor
--- ---------------------------------------------------------------------------
+
+-- SP 2: Registrar Compra a Proveedor
+-- Crea el documento de compra con el número de factura externo del proveedor,
+-- registra los movimientos de inventario y aumenta el stock de cada producto.
+-- IN:  p_id_proveedor, p_id_empleado, p_nro_factura_ext, p_productos_json
+--      JSON esperado: [{"id":1,"qty":10,"precio":2200000}, ...]
+-- OUT: p_id_documento (-1 si falla), p_mensaje
+
 CREATE PROCEDURE sp_registrar_compra (
     IN  p_id_proveedor    INT,
     IN  p_id_empleado     INT,
@@ -294,7 +270,7 @@ BEGIN
         UPDATE producto SET stock_actual = stock_actual + v_qty WHERE id_producto = v_id_prod;
 
         SET v_total = v_total + (v_qty * v_precio);
-        SET v_idx = v_idx + 1;
+        SET v_idx   = v_idx + 1;
     END WHILE;
 
     UPDATE documento SET total = v_total, subtotal = v_total WHERE id_documento = p_id_documento;
@@ -303,9 +279,15 @@ BEGIN
     SET p_mensaje = 'Compra registrada exitosamente.';
 END$$
 
--- ---------------------------------------------------------------------------
--- SP 3: Registrar Ajuste de Inventario
--- ---------------------------------------------------------------------------
+
+-- SP 3: Ajuste de Inventario
+-- Registra una entrada o salida manual de inventario. El efecto (+1 o -1)
+-- lo determina el tipo de documento. Si es salida y no hay stock suficiente,
+-- se aborta la operación sin modificar nada.
+-- IN:  p_id_tipo_doc (5=Entrada,6=Salida,7=Baja), p_id_empleado,
+--      p_id_producto, p_cantidad, p_observacion
+-- OUT: p_id_documento (-1 si falla), p_mensaje
+
 CREATE PROCEDURE sp_ajuste_inventario (
     IN  p_id_tipo_doc  INT,
     IN  p_id_empleado  INT,
@@ -316,8 +298,8 @@ CREATE PROCEDURE sp_ajuste_inventario (
     OUT p_mensaje      VARCHAR(255)
 )
 BEGIN
-    DECLARE v_efecto   TINYINT;
-    DECLARE v_stock    INT;
+    DECLARE v_efecto TINYINT;
+    DECLARE v_stock  INT;
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         ROLLBACK;
@@ -342,18 +324,21 @@ BEGIN
         INSERT INTO movimiento_inventario (id_documento, id_producto, id_empleado, cantidad, precio_unitario)
         VALUES (p_id_documento, p_id_producto, p_id_empleado, p_cantidad, 0);
 
-        UPDATE producto
-        SET stock_actual = stock_actual + (v_efecto * p_cantidad)
-        WHERE id_producto = p_id_producto;
+        UPDATE producto SET stock_actual = stock_actual + (v_efecto * p_cantidad) WHERE id_producto = p_id_producto;
 
         COMMIT;
         SET p_mensaje = 'Ajuste registrado correctamente.';
     END IF;
 END$$
 
--- ---------------------------------------------------------------------------
--- SP 4: Consultar stock actual de todos los productos con alerta
--- ---------------------------------------------------------------------------
+
+-- SP 4: Consultar Stock
+-- Retorna el estado de inventario de todos los productos activos.
+-- Con p_solo_alertas = 1 filtra solo los que tienen stock <= stock_minimo,
+-- ordenados por diferencia ASC (los más críticos primero).
+-- IN:  p_solo_alertas (1 = solo alertas, 0 = todos)
+-- Columnas retornadas: id_producto, nombre, categoria, stock_actual, stock_minimo, diferencia
+
 CREATE PROCEDURE sp_consultar_stock (
     IN p_solo_alertas TINYINT(1)
 )
@@ -377,42 +362,53 @@ BEGIN
     END IF;
 END$$
 
--- ---------------------------------------------------------------------------
--- SP 5: Reporte de movimientos por producto y rango de fechas
--- ---------------------------------------------------------------------------
+
+-- SP 5: Reporte de Movimientos
+-- Retorna el detalle de movimientos de inventario con información completa
+-- de documento, producto, persona y empleado. Filtra por producto (opcional)
+-- y por rango de fechas (obligatorio).
+-- IN:  p_id_producto (NULL = todos), p_fecha_desde, p_fecha_hasta (DATE 'YYYY-MM-DD')
+-- Columnas: id_movimiento, fecha_movimiento, tipo_documento, efecto_en_inventario,
+--           numero_doc_externo, producto, cantidad, precio_unitario,
+--           subtotal_linea, persona_doc, empleado_reg
+
 CREATE PROCEDURE sp_reporte_movimientos (
-    IN p_id_producto  INT,
-    IN p_fecha_desde  DATE,
-    IN p_fecha_hasta  DATE
+    IN p_id_producto INT,
+    IN p_fecha_desde DATE,
+    IN p_fecha_hasta DATE
 )
 BEGIN
     SELECT
         m.id_movimiento,
         m.fecha_movimiento,
-        td.descripcion         AS tipo_documento,
+        td.descripcion                          AS tipo_documento,
         td.efecto_en_inventario,
         d.numero_doc_externo,
-        p.nombre               AS producto,
+        p.nombre                                AS producto,
         m.cantidad,
         m.precio_unitario,
         m.subtotal_linea,
-        CONCAT(pe.nombres, ' ', pe.apellidos) AS persona_doc,
+        CONCAT(pe.nombres,  ' ', pe.apellidos)  AS persona_doc,
         CONCAT(emp.nombres, ' ', emp.apellidos) AS empleado_reg
     FROM movimiento_inventario m
-    JOIN documento             d   ON m.id_documento       = d.id_documento
-    JOIN tipo_documento        td  ON d.id_tipo_documento   = td.id_tipo_documento
-    JOIN producto              p   ON m.id_producto         = p.id_producto
-    JOIN persona               pe  ON d.id_persona          = pe.id_persona
-    JOIN empleado              e   ON m.id_empleado         = e.id_persona
-    JOIN persona               emp ON e.id_persona          = emp.id_persona
+    JOIN documento             d   ON m.id_documento      = d.id_documento
+    JOIN tipo_documento        td  ON d.id_tipo_documento  = td.id_tipo_documento
+    JOIN producto              p   ON m.id_producto        = p.id_producto
+    JOIN persona               pe  ON d.id_persona         = pe.id_persona
+    JOIN empleado              e   ON m.id_empleado        = e.id_persona
+    JOIN persona               emp ON e.id_persona         = emp.id_persona
     WHERE (p_id_producto IS NULL OR m.id_producto = p_id_producto)
       AND DATE(m.fecha_movimiento) BETWEEN p_fecha_desde AND p_fecha_hasta
     ORDER BY m.fecha_movimiento DESC;
 END$$
 
--- ---------------------------------------------------------------------------
--- SP 6: Historial de compras de un cliente
--- ---------------------------------------------------------------------------
+
+-- SP 6: Historial de un Cliente
+-- Retorna todos los documentos asociados a un cliente, agrupados por documento,
+-- con el total, método de pago y cantidad de productos involucrados.
+-- IN:  p_id_cliente
+-- Columnas: id_documento, fecha_documento, tipo, total, metodo_pago, cant_productos
+
 CREATE PROCEDURE sp_historial_cliente (
     IN p_id_cliente INT
 )
@@ -420,13 +416,13 @@ BEGIN
     SELECT
         d.id_documento,
         d.fecha_documento,
-        td.descripcion   AS tipo,
+        td.descripcion              AS tipo,
         d.total,
-        mp.nombre        AS metodo_pago,
-        COUNT(m.id_movimiento) AS cant_productos
+        mp.nombre                   AS metodo_pago,
+        COUNT(m.id_movimiento)      AS cant_productos
     FROM documento d
-    JOIN tipo_documento  td  ON d.id_tipo_documento = td.id_tipo_documento
-    LEFT JOIN metodo_pago mp ON d.id_metodo_pago    = mp.id_metodo_pago
+    JOIN  tipo_documento  td  ON d.id_tipo_documento = td.id_tipo_documento
+    LEFT JOIN metodo_pago mp  ON d.id_metodo_pago    = mp.id_metodo_pago
     LEFT JOIN movimiento_inventario m ON d.id_documento = m.id_documento
     WHERE d.id_persona = p_id_cliente
     GROUP BY d.id_documento, d.fecha_documento, td.descripcion, d.total, mp.nombre
@@ -436,78 +432,45 @@ END$$
 DELIMITER ;
 
 -- =============================================================================
--- 8. DATOS DE PRUEBA
--- CORRECCIÓN: INSERT de cliente y proveedor usan subconsulta para obtener
---             el id_persona real en vez de un número fijo (1, 2, 3)
---             que podría no coincidir con el AUTO_INCREMENT
+-- DATOS DE PRUEBA
 -- =============================================================================
 
 INSERT INTO categoria (nombre) VALUES ('Computadores'), ('Celulares'), ('Accesorios'), ('Componentes');
 INSERT INTO metodo_pago (nombre) VALUES ('Efectivo'), ('Tarjeta Débito'), ('Tarjeta Crédito'), ('Transferencia');
 
--- Persona EMPLEADO
 INSERT INTO persona (tipo, nombres, apellidos, documento, email) VALUES
     ('EMPLEADO', 'Carlos', 'Martínez', '10001', 'carlos@techzone.co');
-
--- ✅ CORRECCIÓN: subconsulta en vez de id fijo
 INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
-SELECT id_persona, 5, '2024-01-10', SHA2('admin123', 256)
-FROM persona WHERE documento = '10001';
+SELECT id_persona, 5, '2024-01-10', SHA2('admin123', 256) FROM persona WHERE documento = '10001';
 
--- Persona CLIENTE
 INSERT INTO persona (tipo, nombres, apellidos, documento, email) VALUES
     ('CLIENTE', 'Laura', 'Gómez', '20001', 'laura@gmail.com');
-
--- ✅ CORRECCIÓN: subconsulta en vez de id fijo
 INSERT INTO cliente (id_persona)
 SELECT id_persona FROM persona WHERE documento = '20001';
 
--- Persona PROVEEDOR
 INSERT INTO persona (tipo, nombres, apellidos, documento, email) VALUES
     ('PROVEEDOR', 'Samsung', 'Colombia', '30001', 'ventas@samsung.co');
-
--- ✅ CORRECCIÓN: subconsulta en vez de id fijo
 INSERT INTO proveedor (id_persona, nombre_empresa, nit)
-SELECT id_persona, 'Samsung Electronics Colombia', '900123456-1'
-FROM persona WHERE documento = '30001';
+SELECT id_persona, 'Samsung Electronics Colombia', '900123456-1' FROM persona WHERE documento = '30001';
 
--- Productos
 INSERT INTO producto (id_categoria, nombre, precio_compra, precio_venta, stock_actual, stock_minimo) VALUES
     (1, 'Laptop ASUS VivoBook 15',    2200000, 2800000, 10, 3),
     (2, 'Samsung Galaxy A55',         1100000, 1400000, 15, 5),
     (3, 'Mouse Logitech MX Master 3',  180000,  250000, 30, 8);
- 
- --  Asignar contraseña a Laura Gómez (cliente de prueba)
---             Password elegida: laura123
---             SHA-256('laura123') = 5a797e04dd084f9e9502d0e0e54d0a0996bc9d13e14fbf1613425a8bb4b448ce
--- -----------------------------------------------------------------------------
-    UPDATE cliente
-SET contrasena_hash = SHA2('laura123', 256)
-WHERE id_persona = (
-    SELECT id_persona FROM persona WHERE email = 'laura@gmail.com'
-);
 
--- Verificar que quedó bien
-SELECT p.nombres, p.apellidos, p.email, c.contrasena_hash
-FROM persona p
-JOIN cliente c ON p.id_persona = c.id_persona
-WHERE p.email = 'admin@techzone.co';
+UPDATE cliente SET contrasena_hash = SHA2('laura123', 256)
+WHERE id_persona = (SELECT id_persona FROM persona WHERE email = 'laura@gmail.com');
 
--- Solo insertar si no existe
 INSERT IGNORE INTO persona (tipo, nombres, apellidos, documento, email, activo)
 VALUES ('CLIENTE', 'Admin', 'TechZone', '99999', 'admin@techzone.co', 1);
-
 INSERT IGNORE INTO cliente (id_persona, contrasena_hash)
-SELECT id_persona, SHA2('techzone', 256)
-FROM persona WHERE documento = '99999';
+SELECT id_persona, SHA2('techzone', 256) FROM persona WHERE documento = '99999';
 
-
--- — Crear vista compatible con el DAO
 CREATE OR REPLACE VIEW vista_persona_cliente AS
 SELECT
     p.id_persona,
-    p.nombres      AS nombre,       -- alias que el DAO busca con getString("nombre")
-    p.apellidos    AS apellido,     -- alias que el DAO busca con getString("apellido")
+    p.nombres     AS nombre,
+    p.apellidos   AS apellido,
     p.documento,
     p.telefono,
     p.email,
@@ -517,11 +480,3 @@ SELECT
 FROM persona p
 JOIN cliente c ON p.id_persona = c.id_persona
 WHERE p.tipo = 'CLIENTE' AND p.activo = 1;
-
--- Verificar la vista
-SELECT * FROM vista_persona_cliente;
-
--- =============================================================================
--- FIN DEL SCRIPT CORREGIDO
--- =============================================================================
-
