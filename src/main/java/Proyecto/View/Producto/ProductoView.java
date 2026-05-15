@@ -25,15 +25,13 @@ import java.util.List;
 public class ProductoView {
 
     private final ProductoServices productoServices;
-    private final int idCliente;
 
     private TableView<FilaProducto> tablaProductos;
     private ObservableList<FilaProducto> datos;
     private TextField txtBuscar;
     private VBox root;
 
-    public ProductoView(int idCliente) {
-        this.idCliente = idCliente;
+    public ProductoView() {
         this.productoServices = new ProductoServices();
         this.datos = FXCollections.observableArrayList();
         initComponents();
@@ -81,7 +79,7 @@ public class ProductoView {
         tablaProductos = new TableView<>();
         tablaProductos.setItems(datos);
         // Correcto para JavaFX 21
-tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaProductos, Priority.ALWAYS);
 
         TableColumn<FilaProducto, Integer> colId = new TableColumn<>("ID");
