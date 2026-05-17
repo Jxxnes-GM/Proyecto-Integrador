@@ -618,7 +618,7 @@ public class AdminDashboardView {
         return card;
     }
 
-    @SuppressWarnings("unchecked")
+
     private TableColumn<String[], String> columnaStr(String titulo, int idx) {
         TableColumn<String[], String> col = new TableColumn<>(titulo);
         col.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().length > idx ? d.getValue()[idx] : ""));

@@ -480,3 +480,93 @@ SELECT
 FROM persona p
 JOIN cliente c ON p.id_persona = c.id_persona
 WHERE p.tipo = 'CLIENTE' AND p.activo = 1;
+
+
+-- ============================================================
+-- TECHZONE — Usuarios con roles asignados
+-- ============================================================
+USE techzone;
+
+-- Limpia datos de prueba anteriores para evitar duplicados
+DELETE FROM empleado WHERE id_persona IN (
+    SELECT id_persona FROM persona WHERE documento IN ('10001','10002','10003','10004','10005')
+);
+DELETE FROM cliente WHERE id_persona IN (
+    SELECT id_persona FROM persona WHERE documento IN ('20001','99999')
+);
+DELETE FROM persona WHERE documento IN ('10001','10002','10003','10004','10005','20001','99999');
+
+-- ── ADMINISTRADOR (cargo 1) ──────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('EMPLEADO', 'Admin', 'TechZone', '10001', 'admin@techzone.co', 1);
+
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 1, CURDATE(), SHA2('admin123', 256)
+FROM persona WHERE documento = '10001';
+
+-- ── COMPRADOR (cargo 2) ──────────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('EMPLEADO', 'Oscar', 'Soto', '10002', 'osoto@techzone.co', 1);
+
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 2, CURDATE(), SHA2('comprador123', 256)
+FROM persona WHERE documento = '10002';
+
+-- ── VENDEDOR (cargo 3) ───────────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('EMPLEADO', 'Leidy', 'Bustamante', '10003', 'lbustamante@techzone.co', 1);
+
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 3, CURDATE(), SHA2('vendedor123', 256)
+FROM persona WHERE documento = '10003';
+
+-- ── CAJERO (cargo 4) ─────────────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('EMPLEADO', 'Carlos', 'Martínez', '10004', 'cmartinez@techzone.co', 1);
+
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 4, CURDATE(), SHA2('cajero123', 256)
+FROM persona WHERE documento = '10004';
+
+-- ── BODEGUERO (cargo 5) ──────────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('EMPLEADO', 'Juan', 'Gaviria', '10005', 'jgaviria@techzone.co', 1);
+
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 5, CURDATE(), SHA2('bodeguero123', 256)
+FROM persona WHERE documento = '10005';
+
+-- ── CLIENTE de prueba ────────────────────────────────────────
+INSERT INTO persona (tipo, nombres, apellidos, documento, email, activo)
+VALUES ('CLIENTE', 'Laura', 'Gómez', '20001', 'laura@gmail.com', 1);
+
+INSERT INTO cliente (id_persona, contrasena_hash)
+SELECT id_persona, SHA2('laura123', 256)
+FROM persona WHERE documento = '20001';
+
+-- ── VERIFICAR QUE QUEDÓ BIEN ─────────────────────────────────
+SELECT
+    p.documento,
+    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+    p.tipo,
+    p.email,
+    c.nombre AS cargo
+FROM persona p
+LEFT JOIN empleado e ON p.id_persona = e.id_persona
+LEFT JOIN cargo c    ON e.id_cargo = c.id_cargo
+ORDER BY p.tipo, c.id_cargo;
+
+/*
+  ┌───────────────────────────────────────────────────────────────┐
+  │  CREDENCIALES                                                 │
+  ├──────────────────────┬────────────────────────┬──────────────┤
+  │  ROL / CARGO         │  EMAIL                  │  CONTRASEÑA  │
+  ├──────────────────────┼────────────────────────┼──────────────┤
+  │  Administrador       │  admin@techzone.co      │  admin123    │
+  │  Comprador           │  osoto@techzone.co      │  comprador123│
+  │  Vendedor            │  lbustamante@techzone.co│  vendedor123 │
+  │  Cajero              │  cmartinez@techzone.co  │  cajero123   │
+  │  Bodeguero           │  jgaviria@techzone.co   │  bodeguero123│
+  │  Cliente             │  laura@gmail.com        │  laura123    │
+  └──────────────────────┴────────────────────────┴──────────────┘
+*/
