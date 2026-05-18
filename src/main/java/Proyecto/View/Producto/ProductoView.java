@@ -1,6 +1,8 @@
 package Proyecto.View.Producto;
 
+import Proyecto.Model.Cliente;
 import Proyecto.Model.Producto;
+import Proyecto.services.CarritoServices;
 import Proyecto.services.ProductoServices;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -16,33 +18,28 @@ import javafx.scene.text.FontWeight;
 
 import java.util.List;
 
-/**
- * ProductoView — CORRECCIÓN APLICADA:
- *
- * BUG: procesarCompra() parseaba el precio con:
- *   Double.parseDouble(fila.getPrecio().replace("$", ""))
- *
- * En sistemas con locale español (Colombia), los números se formatean con
- * coma decimal y punto como separador de miles, por ejemplo: "$2.800.000,00"
- * Double.parseDouble() solo acepta punto decimal → lanzaba NumberFormatException
- * → Alert "Por favor ingrese un número válido" que se veía en la imagen.
- *
- * FIX: se guarda el precio como double en FilaProducto además del String
- * formateado para display. El cálculo usa el double directamente,
- * eliminando por completo el parseo del String formateado.
- */
 public class ProductoView {
 
     private final ProductoServices productoServices;
+    private final CarritoServices  carritoServices;
+    private final Cliente          clienteActual;
 
-    private TableView<FilaProducto> tablaProductos;
+    private TableView<FilaProducto>      tablaProductos;
     private ObservableList<FilaProducto> datos;
-    private TextField txtBuscar;
-    private VBox root;
+    private TextField                    txtBuscar;
+    private VBox                         root;
 
+    // Constructor sin cliente (compatibilidad)
     public ProductoView() {
+        this(null);
+    }
+
+    // Constructor con cliente de sesión activa
+    public ProductoView(Cliente cliente) {
+        this.clienteActual    = cliente;
         this.productoServices = new ProductoServices();
-        this.datos = FXCollections.observableArrayList();
+        this.carritoServices  = new CarritoServices();
+        this.datos            = FXCollections.observableArrayList();
         initComponents();
         cargarProductos();
     }
@@ -56,7 +53,6 @@ public class ProductoView {
         root.setStyle("-fx-background-color: white;");
         VBox.setVgrow(root, Priority.ALWAYS);
 
-        // ── Panel superior ─────────────────────────────────────────────────
         HBox topPanel = new HBox(10);
         topPanel.setAlignment(Pos.CENTER_LEFT);
 
@@ -70,17 +66,13 @@ public class ProductoView {
         txtBuscar = new TextField();
         txtBuscar.setPromptText("Buscar producto...");
         txtBuscar.setPrefWidth(220);
-        txtBuscar.setStyle(
-                "-fx-border-color: #C8C8C8;" +
-                "-fx-border-width: 1;" +
-                "-fx-padding: 8;");
+        txtBuscar.setStyle("-fx-border-color: #C8C8C8; -fx-border-width: 1; -fx-padding: 8;");
 
         Button btnBuscar = crearBoton("Buscar", "#00C8FF");
         btnBuscar.setOnAction(e -> buscarProductos());
 
         topPanel.getChildren().addAll(lblTitulo, spacer, txtBuscar, btnBuscar);
 
-        // ── Tabla ──────────────────────────────────────────────────────────
         tablaProductos = new TableView<>();
         tablaProductos.setItems(datos);
         tablaProductos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
@@ -133,7 +125,6 @@ public class ProductoView {
             return row;
         });
 
-        // ── Panel inferior ─────────────────────────────────────────────────
         HBox bottomPanel = new HBox();
         bottomPanel.setAlignment(Pos.CENTER);
         Button btnActualizar = crearBoton("Actualizar", "#646464");
@@ -143,98 +134,94 @@ public class ProductoView {
         root.getChildren().addAll(topPanel, tablaProductos, bottomPanel);
     }
 
-    // ── Carga de datos ─────────────────────────────────────────────────────────
     private void cargarProductos() {
         datos.clear();
-        List<Producto> productos = productoServices.obtenerTodosLosProductos();
-        for (Producto p : productos) {
-            if (p.getActivo()) {
+        for (Producto p : productoServices.obtenerTodosLosProductos()) {
+            if (Boolean.TRUE.equals(p.getActivo())) {
                 datos.add(new FilaProducto(
-                        p.getIdProducto(),
-                        p.getNombre(),
+                        p.getIdProducto(), p.getNombre(),
                         p.getCategoria() != null ? p.getCategoria().getNombre() : "Sin categoría",
-                        p.getPrecioVenta(),   // double real para cálculos
-                        p.getCantidad()));
+                        p.getPrecioVenta(), p.getCantidad()));
             }
         }
     }
 
     private void buscarProductos() {
-        String busqueda = txtBuscar.getText().trim();
+        String q = txtBuscar.getText().trim();
         datos.clear();
-        List<Producto> productos = busqueda.isEmpty()
+        List<Producto> lista = q.isEmpty()
                 ? productoServices.obtenerTodosLosProductos()
-                : productoServices.buscarProductos(busqueda);
-
-        for (Producto p : productos) {
-            if (p.getActivo()) {
+                : productoServices.buscarProductos(q);
+        for (Producto p : lista) {
+            if (Boolean.TRUE.equals(p.getActivo())) {
                 datos.add(new FilaProducto(
-                        p.getIdProducto(),
-                        p.getNombre(),
+                        p.getIdProducto(), p.getNombre(),
                         p.getCategoria() != null ? p.getCategoria().getNombre() : "Sin categoría",
-                        p.getPrecioVenta(),
-                        p.getCantidad()));
+                        p.getPrecioVenta(), p.getCantidad()));
             }
         }
     }
 
-    // ── Lógica de compra ───────────────────────────────────────────────────────
+    // ── PROCESARCOMPRA: ahora hace la llamada real al carrito ──────────────────
     private void procesarCompra(FilaProducto fila) {
         if (fila.getStock() <= 0) {
-            new Alert(Alert.AlertType.WARNING,
-                    "No hay stock disponible de este producto.", ButtonType.OK).showAndWait();
+            alert(Alert.AlertType.WARNING, "Sin stock", "No hay stock disponible.");
             return;
         }
 
-        TextInputDialog dialog = new TextInputDialog("1");
-        dialog.setTitle("Agregar al Carrito");
-        dialog.setHeaderText(
-                "Producto: " + fila.getNombre() +
-                "\nPrecio: " + fila.getPrecioDisplay() +
-                "\nStock disponible: " + fila.getStock());
-        dialog.setContentText("Ingrese la cantidad:");
+        if (clienteActual == null) {
+            alert(Alert.AlertType.WARNING, "Sesión requerida",
+                    "Debes iniciar sesión para agregar productos al carrito.");
+            return;
+        }
 
-        dialog.showAndWait().ifPresent(cantStr -> {
+        TextInputDialog dlg = new TextInputDialog("1");
+        dlg.setTitle("Agregar al Carrito");
+        dlg.setHeaderText("Producto: " + fila.getNombre()
+                + "\nPrecio:   " + fila.getPrecioDisplay()
+                + "\nStock:    " + fila.getStock());
+        dlg.setContentText("Cantidad:");
+
+        dlg.showAndWait().ifPresent(cantStr -> {
+            int cantidad;
             try {
-                int cantidad = Integer.parseInt(cantStr.trim());
-
-                if (cantidad <= 0) {
-                    showError("La cantidad debe ser mayor a 0.");
-                    return;
-                }
-                if (cantidad > fila.getStock()) {
-                    showError("Stock insuficiente. Disponible: " + fila.getStock());
-                    return;
-                }
-
-                // CORRECCIÓN: usa fila.getPrecioDouble() directamente, sin parsear el String
-                double subtotal = cantidad * fila.getPrecioDouble();
-
-                String mensaje = String.format(
-                        "✓ Producto agregado al carrito:\n" +
-                        "ID: %d\n" +
-                        "Producto: %s\n" +
-                        "Cantidad: %d\n" +
-                        "Precio unitario: %s\n" +
-                        "Subtotal: $%,.2f",
-                        fila.getId(),
-                        fila.getNombre(),
-                        cantidad,
-                        fila.getPrecioDisplay(),
-                        subtotal);
-
-                new Alert(Alert.AlertType.INFORMATION, mensaje, ButtonType.OK).showAndWait();
-                // Aquí puedes llamar: carritoServices.agregarProductoAlCarrito(idCliente, fila.getId(), cantidad);
-
+                cantidad = Integer.parseInt(cantStr.trim());
             } catch (NumberFormatException ex) {
-                showError("Por favor ingrese un número entero válido.");
+                alert(Alert.AlertType.ERROR, "Error", "Ingresa un número entero válido.");
+                return;
+            }
+
+            if (cantidad <= 0) {
+                alert(Alert.AlertType.ERROR, "Error", "La cantidad debe ser mayor a 0.");
+                return;
+            }
+            if (cantidad > fila.getStock()) {
+                alert(Alert.AlertType.ERROR, "Stock insuficiente",
+                        "Solo hay " + fila.getStock() + " unidades disponibles.");
+                return;
+            }
+
+            // Llamada real a CarritoServices
+            boolean ok = carritoServices.agregarProductoAlCarrito(
+                    clienteActual.getId(), fila.getId(), cantidad);
+
+            if (ok) {
+                double subtotal = cantidad * fila.getPrecioDouble();
+                alert(Alert.AlertType.INFORMATION, "Agregado",
+                        String.format("✓ %s x%d agregado al carrito.%nSubtotal: $%,.2f",
+                                fila.getNombre(), cantidad, subtotal));
+                cargarProductos(); // refresca stock
+            } else {
+                alert(Alert.AlertType.ERROR, "Error",
+                        "No se pudo agregar al carrito.\nVerifica la conexión a la base de datos.");
             }
         });
     }
 
-    private void showError(String msg) {
-        Alert a = new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK);
-        a.setTitle("Error");
+    private void alert(Alert.AlertType tipo, String titulo, String msg) {
+        Alert a = new Alert(tipo, msg, ButtonType.OK);
+        a.setTitle(titulo);
+        a.setHeaderText(null);
         a.showAndWait();
     }
 
@@ -242,42 +229,35 @@ public class ProductoView {
         Button btn = new Button(texto);
         btn.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         btn.setTextFill(Color.WHITE);
-        btn.setStyle(
-                "-fx-background-color: " + color + ";" +
-                "-fx-border-width: 0;" +
-                "-fx-cursor: hand;" +
-                "-fx-padding: 7 14 7 14;");
+        btn.setStyle("-fx-background-color: " + color
+                + "; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 7 14 7 14;");
         return btn;
     }
 
     // ── Modelo de fila ─────────────────────────────────────────────────────────
-    // CORRECCIÓN: se agrega precioDouble para usar en cálculos sin parsear el String
     public static class FilaProducto {
-        private final int id;
+        private final int    id;
         private final String nombre;
         private final String categoria;
-        private final double precioDouble;   // valor real para cálculos
-        private final String precioDisplay;  // String formateado solo para mostrar
-        private final int stock;
+        private final double precioDouble;
+        private final String precioDisplay;
+        private final int    stock;
 
         public FilaProducto(int id, String nombre, String categoria, double precio, int stock) {
-            this.id = id;
-            this.nombre = nombre;
-            this.categoria = categoria;
-            this.precioDouble = precio;
-            // Formato colombiano con punto como separador de miles
+            this.id            = id;
+            this.nombre        = nombre;
+            this.categoria     = categoria;
+            this.precioDouble  = precio;
             this.precioDisplay = String.format("$%,.2f", precio);
-            this.stock = stock;
+            this.stock         = stock;
         }
 
-        public int    getId()           { return id; }
-        public String getNombre()       { return nombre; }
-        public String getCategoria()    { return categoria; }
-        public double getPrecioDouble() { return precioDouble; }
-        public String getPrecioDisplay(){ return precioDisplay; }
-        public int    getStock()        { return stock; }
-
-        // Alias para PropertyValueFactory de la columna "precioDisplay"
-        public String getPrecio()       { return precioDisplay; }
+        public int    getId()            { return id; }
+        public String getNombre()        { return nombre; }
+        public String getCategoria()     { return categoria; }
+        public double getPrecioDouble()  { return precioDouble; }
+        public String getPrecioDisplay() { return precioDisplay; }
+        public String getPrecio()        { return precioDisplay; }
+        public int    getStock()         { return stock; }
     }
 }
