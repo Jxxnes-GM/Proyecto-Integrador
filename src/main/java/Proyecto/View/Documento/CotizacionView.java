@@ -91,7 +91,7 @@ public class CotizacionView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        Label lblTitulo = new Label("📝  Generación de Cotización");
+        Label lblTitulo = new Label("  Generación de Cotización");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
@@ -105,7 +105,7 @@ public class CotizacionView {
         leftCol.setMaxWidth(340);
 
         // Sección cliente
-        VBox secCliente = seccion("👤 Cliente");
+        VBox secCliente = seccion(" Cliente");
         txtBuscarCliente = campo("Buscar por nombre o correo...");
         Button btnBuscarCliente = boton("Buscar", "#00C8FF");
         btnBuscarCliente.setOnAction(e -> buscarCliente());
@@ -120,7 +120,7 @@ public class CotizacionView {
         secCliente.getChildren().addAll(buscarRow, lblClienteSeleccionado);
 
         // Sección catálogo
-        VBox secCatalogo = seccion("📦 Agregar Producto");
+        VBox secCatalogo = seccion(" Agregar Producto");
         VBox.setVgrow(secCatalogo, Priority.ALWAYS);
 
         txtBuscarProducto = campo("Buscar producto...");
@@ -134,7 +134,7 @@ public class CotizacionView {
         spinnerCantidad.setEditable(true);
         spinnerCantidad.setPrefWidth(100);
 
-        Button btnAgregar = boton("➕ Agregar a cotización", "#1A8A2A");
+        Button btnAgregar = boton(" Agregar a cotización", "#1A8A2A");
         btnAgregar.setMaxWidth(Double.MAX_VALUE);
         btnAgregar.setOnAction(e -> agregarProducto(spinnerCantidad.getValue()));
 
@@ -152,7 +152,7 @@ public class CotizacionView {
         HBox.setHgrow(rightCol, Priority.ALWAYS);
 
         // Tabla de ítems de la cotización
-        VBox secCotizacion = seccion("🧾 Ítems de la Cotización");
+        VBox secCotizacion = seccion(" Ítems de la Cotización");
         VBox.setVgrow(secCotizacion, Priority.ALWAYS);
 
         tablaCotizacion = new TableView<>(itemsCotizacion);
@@ -228,7 +228,7 @@ public class CotizacionView {
         secCotizacion.getChildren().addAll(tablaCotizacion, gridTotales);
 
         // Observaciones y botones de acción
-        VBox secAcciones = seccion("📋 Observaciones y Acciones");
+        VBox secAcciones = seccion(" Observaciones y Acciones");
 
         txtObservaciones = new TextArea();
         txtObservaciones.setPromptText("Notas adicionales para el cliente...");
@@ -239,9 +239,9 @@ public class CotizacionView {
         HBox btnAcciones = new HBox(10);
         btnAcciones.setAlignment(Pos.CENTER_RIGHT);
 
-        Button btnLimpiar = boton("🗑 Limpiar todo", "#646464");
-        Button btnGenerar = boton("📄 Generar Cotización", "#0A1933");
-        Button btnConfirmar = boton("✅ Confirmar Venta", "#1A8A2A");
+        Button btnLimpiar = boton(" Limpiar todo", "#646464");
+        Button btnGenerar = boton(" Generar Cotización", "#0A1933");
+        Button btnConfirmar = boton(" Confirmar Venta", "#1A8A2A");
 
         btnLimpiar.setOnAction(e -> limpiarCotizacion());
         btnGenerar.setOnAction(e -> generarCotizacion());

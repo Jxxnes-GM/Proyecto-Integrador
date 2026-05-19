@@ -15,7 +15,6 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -39,10 +38,16 @@ public class MenuPrincipalView {
     private final InventarioServices inventarioServices;
     private final DocumentoServices  documentoServices;
 
+    // Labels del dashboard de empleado/admin
     private Label lblDashProductos;
     private Label lblDashStockBajo;
-    private Label lblDashCompras;
-    private Label lblDashGastado;
+    private Label lblDashVentas;
+    private Label lblDashMonto;
+
+    // Labels del panel de cliente
+    private Label lblClienteCarrito;
+    private Label lblClienteCompras;
+    private Label lblClienteGastado;
 
     // ── Constructores ──────────────────────────────────────────────────────────
     public MenuPrincipalView(Cliente cliente, Stage stage) {
@@ -51,19 +56,28 @@ public class MenuPrincipalView {
         this.productoServices   = new ProductoServices();
         this.inventarioServices = new InventarioServices();
         this.documentoServices  = new DocumentoServices();
-        this.rol                = resolverRol(cliente);
+        // CORRECCIÓN: lee el rol real del objeto Cliente
+        this.rol = resolverRol(cliente);
         initComponents();
-        mostrarDashboard();
-        cargarDatosDashboard();
+        // Dashboard: solo para empleados y admins
+        // Clientes ven el catálogo directamente
+        if (esCliente()) {
+            mostrarProductos();
+        } else {
+            mostrarDashboardAdmin();
+        }
     }
 
     public MenuPrincipalView(Stage stage) {
         this(null, stage);
     }
 
+    // CORRECCIÓN: ya no devuelve siempre "CLIENTE"
+    // Lee el campo rol que PersonaServices asignó durante el login
     private String resolverRol(Cliente c) {
         if (c == null) return "CLIENTE";
-        return "CLIENTE";
+        String r = c.getRol();
+        return (r != null && !r.isEmpty()) ? r.toUpperCase() : "CLIENTE";
     }
 
     // ── Init ───────────────────────────────────────────────────────────────────
@@ -97,7 +111,7 @@ public class MenuPrincipalView {
         topBar.setPadding(new Insets(0, 20, 0, 20));
         topBar.setStyle("-fx-background-color: #0A1933;");
 
-        Label lblLogo    = new Label("TECHZONE");
+        Label lblLogo = new Label("TECHZONE");
         lblLogo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblLogo.setTextFill(Color.web("#00C8FF"));
 
@@ -112,18 +126,25 @@ public class MenuPrincipalView {
                 ? cliente.getNombre() + " " + cliente.getApellido()
                 : "Invitado";
 
+        // CORRECCIÓN: color del badge según rol
+        String colorBadge = colorDelRol(rol);
+
         Label lblRolBadge = new Label(rol);
         lblRolBadge.setFont(Font.font("Arial", FontWeight.BOLD, 10));
         lblRolBadge.setTextFill(Color.web("#0A1933"));
-        lblRolBadge.setStyle("-fx-background-color: #00C8FF; -fx-padding: 2 6 2 6;");
+        lblRolBadge.setStyle(
+                "-fx-background-color: " + colorBadge + ";" +
+                "-fx-padding: 2 6 2 6;");
 
         Label lblUser = new Label("  " + nombreUsuario);
         lblUser.setTextFill(Color.WHITE);
         lblUser.setFont(Font.font("Arial", 13));
 
         Button btnLogout = new Button("Cerrar sesión");
-        btnLogout.setStyle("-fx-background-color: #C83C3C; -fx-text-fill: white; " +
-                "-fx-font-weight: bold; -fx-border-width: 0; -fx-cursor: hand; -fx-padding: 6 14 6 14;");
+        btnLogout.setStyle(
+                "-fx-background-color: #C83C3C; -fx-text-fill: white;" +
+                "-fx-font-weight: bold; -fx-border-width: 0;" +
+                "-fx-cursor: hand; -fx-padding: 6 14 6 14;");
         btnLogout.setOnAction(e -> cerrarSesion());
 
         HBox userBox = new HBox(10, lblRolBadge, lblUser, btnLogout);
@@ -133,6 +154,18 @@ public class MenuPrincipalView {
         return topBar;
     }
 
+    // Color del badge según el rol del usuario
+    private String colorDelRol(String rol) {
+        return switch (rol) {
+            case "ADMINISTRADOR" -> "#FF9800";  // naranja
+            case "VENDEDOR"      -> "#4CAF50";  // verde
+            case "CAJERO"        -> "#9C27B0";  // morado
+            case "COMPRADOR"     -> "#2196F3";  // azul
+            case "BODEGUERO"     -> "#795548";  // café
+            default              -> "#00C8FF";  // celeste para CLIENTE
+        };
+    }
+
     // ── Menú lateral ───────────────────────────────────────────────────────────
     private VBox crearMenuLateral() {
         VBox menuPanel = new VBox(4);
@@ -140,49 +173,57 @@ public class MenuPrincipalView {
         menuPanel.setPadding(new Insets(18, 10, 18, 10));
         menuPanel.setStyle("-fx-background-color: #1E2840;");
 
-        agregarSeccion(menuPanel, "PRINCIPAL",
-                List.of("🏠  Dashboard", "📦  Catálogo"),
-                List.of("dashboard", "productos"));
+        // El dashboard solo aparece en el menú para empleados y admins
+        if (esEmpleadoOAdmin()) {
+            agregarSeccion(menuPanel, "PRINCIPAL",
+                    List.of("Dashboard", "Catalogo"),
+                    List.of("dashboard", "productos"));
+        } else {
+            agregarSeccion(menuPanel, "PRINCIPAL",
+                    List.of("Catalogo"),
+                    List.of("productos"));
+        }
 
         if (esCliente()) {
             agregarSeccion(menuPanel, "MI CUENTA",
-                    List.of("🛒  Mi Carrito", "📄  Mis Compras", "👤  Mi Perfil"),
+                    List.of("Mi Carrito", "Mis Compras", "Mi Perfil"),
                     List.of("carrito", "compras", "perfil"));
         }
 
-        if (esEmpleadoOAdmin()) {
+        if (esVendedorOAdmin()) {
             agregarSeccion(menuPanel, "VENTAS",
-                    List.of("📝  Cotizaciones", "🖥  Punto de Venta", "📊  Registro Ventas"),
+                    List.of("Cotizaciones", "Punto de Venta", "Registro Ventas"),
                     List.of("cotizaciones", "pos", "ventas"));
         }
 
         if (esBodegueroOAdmin()) {
             agregarSeccion(menuPanel, "INVENTARIO",
-                    List.of("🔄  Movimientos"),
+                    List.of("Movimientos"),
                     List.of("inventario"));
         }
 
         if (esCompradorOAdmin()) {
-            agregarSeccion(menuPanel, "CATÁLOGO",
-                    List.of("➕  Nuevo Producto"),
+            agregarSeccion(menuPanel, "CATALOGO",
+                    List.of("Nuevo Producto"),
                     List.of("nuevo_producto"));
         }
 
         if (esAdmin()) {
-            agregarSeccion(menuPanel, "ADMINISTRACIÓN",
-                    List.of("⚙  Panel Admin"),
+            agregarSeccion(menuPanel, "ADMINISTRACION",
+                    List.of("Panel Admin"),
                     List.of("admin"));
         }
 
         Region spacer = new Region();
         VBox.setVgrow(spacer, Priority.ALWAYS);
         menuPanel.getChildren().add(spacer);
-        menuPanel.getChildren().add(btnMenu("❌  Salir", "exit"));
+        menuPanel.getChildren().add(btnMenu("Salir", "exit"));
 
         return menuPanel;
     }
 
-    private void agregarSeccion(VBox panel, String titulo, List<String> textos, List<String> acciones) {
+    private void agregarSeccion(VBox panel, String titulo,
+            List<String> textos, List<String> acciones) {
         panel.getChildren().add(sectionLabel(titulo));
         for (int i = 0; i < textos.size(); i++)
             panel.getChildren().add(btnMenu(textos.get(i), acciones.get(i)));
@@ -206,7 +247,7 @@ public class MenuPrincipalView {
         btn.setPadding(new Insets(0, 0, 0, 14));
         estiloBtnNormal(btn);
         btn.setOnMouseEntered(e -> { if (btn != btnActivo) btn.setStyle(ESTILO_HOVER); });
-        btn.setOnMouseExited(e ->  { if (btn != btnActivo) estiloBtnNormal(btn); });
+        btn.setOnMouseExited(e  -> { if (btn != btnActivo) estiloBtnNormal(btn); });
         btn.setOnAction(e -> { resaltarBoton(btn); cambiarPanel(accion); });
         return btn;
     }
@@ -216,6 +257,7 @@ public class MenuPrincipalView {
     private static final String ESTILO_ACTIVO = "-fx-background-color: #0096C8;   -fx-border-width: 0; -fx-cursor: hand;";
 
     private void estiloBtnNormal(Button b) { b.setStyle(ESTILO_NORMAL); }
+
     private void resaltarBoton(Button sel) {
         if (btnActivo != null) estiloBtnNormal(btnActivo);
         btnActivo = sel;
@@ -226,56 +268,56 @@ public class MenuPrincipalView {
     private void cambiarPanel(String accion) {
         contentPanel.getChildren().clear();
         switch (accion) {
-            case "dashboard"     -> mostrarDashboard();
-            case "productos"     -> mostrarProductos();
-            case "carrito"       -> mostrarCarrito();
-            case "compras"       -> mostrarCompras();
-            case "perfil"        -> mostrarPerfil();
-            case "cotizaciones"  -> mostrarCotizaciones();
-            case "pos"           -> mostrarPuntoDeVenta();
-            case "ventas"        -> mostrarRegistroVentas();
-            case "inventario"    -> mostrarInventario();
-            case "nuevo_producto"-> abrirFormularioProducto();
-            case "admin"         -> mostrarAdminPanel();
-            case "exit"          -> cerrarSesion();
+            case "dashboard"      -> mostrarDashboardAdmin();
+            case "productos"      -> mostrarProductos();
+            case "carrito"        -> mostrarCarrito();
+            case "compras"        -> mostrarCompras();
+            case "perfil"         -> mostrarPerfil();
+            case "cotizaciones"   -> mostrarCotizaciones();
+            case "pos"            -> mostrarPuntoDeVenta();
+            case "ventas"         -> mostrarRegistroVentas();
+            case "inventario"     -> mostrarInventario();
+            case "nuevo_producto" -> abrirFormularioProducto();
+            case "admin"          -> mostrarAdminPanel();
+            case "exit"           -> cerrarSesion();
         }
     }
 
-    // ── Dashboard ──────────────────────────────────────────────────────────────
-    private void mostrarDashboard() {
+    // ── Dashboard ADMIN/EMPLEADO ───────────────────────────────────────────────
+    // Solo visible para roles que no son CLIENTE
+    private void mostrarDashboardAdmin() {
+        if (esCliente()) {
+            // Un cliente que navega a dashboard ve su catálogo
+            mostrarProductos();
+            return;
+        }
+
         VBox dashboard = new VBox(18);
         dashboard.setFillWidth(true);
 
-        Label lblBienvenida = new Label(
-                "Bienvenido, " + (cliente != null ? cliente.getNombre() : "Usuario") + " 👋");
+        String saludo = (cliente != null ? cliente.getNombre() : "Usuario")
+                + " — " + rol;
+        Label lblBienvenida = new Label("Bienvenido, " + saludo);
         lblBienvenida.setFont(Font.font("Arial", FontWeight.BOLD, 20));
         lblBienvenida.setTextFill(Color.web("#0A1933"));
 
-        lblDashProductos = kpiValor("…");
-        lblDashStockBajo = kpiValor("…");
-        lblDashCompras   = kpiValor("…");
-        lblDashGastado   = kpiValor("…");
+        lblDashProductos = kpiValor("...");
+        lblDashStockBajo = kpiValor("...");
+        lblDashVentas    = kpiValor("...");
+        lblDashMonto     = kpiValor("...");
 
         HBox kpiRow = new HBox(15);
         kpiRow.setAlignment(Pos.CENTER_LEFT);
-
-        if (esCliente()) {
-            kpiRow.getChildren().addAll(
-                    kpiCard("🛒 En el carrito",  lblDashProductos, "#00C8FF"),
-                    kpiCard("📄 Mis compras",    lblDashCompras,   "#1A8A2A"),
-                    kpiCard("💰 Total gastado",  lblDashGastado,   "#0A1933"));
-        } else {
-            kpiRow.getChildren().addAll(
-                    kpiCard("📦 Productos",   lblDashProductos, "#00C8FF"),
-                    kpiCard("⚠ Stock bajo",  lblDashStockBajo, "#C83C3C"),
-                    kpiCard("💰 Ventas",      lblDashCompras,   "#1A8A2A"),
-                    kpiCard("📈 Monto total", lblDashGastado,   "#0A1933"));
-        }
+        kpiRow.getChildren().addAll(
+                kpiCard("Productos",   lblDashProductos, "#00C8FF"),
+                kpiCard("Stock bajo",  lblDashStockBajo, "#C83C3C"),
+                kpiCard("Ventas",      lblDashVentas,    "#1A8A2A"),
+                kpiCard("Monto total", lblDashMonto,     "#0A1933"));
 
         VBox chartBox = new VBox(8);
         chartBox.setPadding(new Insets(15));
         chartBox.setStyle("-fx-border-color: #DCDCDC; -fx-border-width: 1;");
-        Label lblChart = new Label("📊  Estadísticas de Ventas — últimos 5 meses");
+        Label lblChart = new Label("Estadisticas de Ventas — ultimos 5 meses");
         lblChart.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         chartBox.getChildren().addAll(lblChart, crearGraficoBarras(750, 170));
 
@@ -295,10 +337,11 @@ public class MenuPrincipalView {
 
         dashboard.getChildren().addAll(lblBienvenida, kpiRow, chartBox, progressBox);
         contentPanel.getChildren().add(dashboard);
-        cargarDatosDashboard();
+
+        cargarKpisAdmin();
     }
 
-    private void cargarDatosDashboard() {
+    private void cargarKpisAdmin() {
         try {
             int prods = productoServices.obtenerTodosLosProductos().size();
             if (lblDashProductos != null) lblDashProductos.setText(String.valueOf(prods));
@@ -313,26 +356,24 @@ public class MenuPrincipalView {
         } catch (Exception e) { if (lblDashStockBajo != null) lblDashStockBajo.setText("—"); }
 
         try {
-            int nVentas = documentoServices.obtenerTodasLasVentas().size();
-            if (lblDashCompras != null) lblDashCompras.setText(String.valueOf(nVentas));
-            double monto = documentoServices.obtenerTodasLasVentas()
-                    .stream().mapToDouble(v -> v.getTotal()).sum();
-            if (lblDashGastado != null) lblDashGastado.setText(String.format("$%.0f", monto));
+            var ventas = documentoServices.obtenerTodasLasVentas();
+            if (lblDashVentas != null) lblDashVentas.setText(String.valueOf(ventas.size()));
+            double monto = ventas.stream().mapToDouble(v -> v.getTotal()).sum();
+            if (lblDashMonto != null) lblDashMonto.setText(String.format("$%.0f", monto));
         } catch (Exception e) {
-            if (lblDashCompras != null) lblDashCompras.setText("—");
-            if (lblDashGastado != null) lblDashGastado.setText("—");
+            if (lblDashVentas != null) lblDashVentas.setText("—");
+            if (lblDashMonto  != null) lblDashMonto.setText("—");
         }
     }
 
-    // ── CORRECCIÓN CLAVE: mostrarProductos pasa el cliente ─────────────────────
+    // ── Módulos ────────────────────────────────────────────────────────────────
     private void mostrarProductos() {
         try {
-            // Se pasa 'cliente' para que ProductoView pueda agregar al carrito
             ProductoView view = new ProductoView(cliente);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
             contentPanel.getChildren().add(
-                    placeholder("📦 Catálogo de Productos", "Sin conexión a la base de datos."));
+                    placeholder("Catalogo de Productos", "Sin conexion a la base de datos."));
         }
     }
 
@@ -348,40 +389,46 @@ public class MenuPrincipalView {
 
     private void mostrarCarrito() {
         if (cliente == null) {
-            contentPanel.getChildren().add(placeholder("🛒 Carrito", "Inicia sesión para ver tu carrito."));
+            contentPanel.getChildren().add(
+                    placeholder("Mi Carrito", "Inicia sesion para ver tu carrito."));
             return;
         }
         try {
             CarritoView view = new CarritoView(cliente);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("🛒 Carrito", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Mi Carrito", "Sin conexion a la base de datos."));
         }
     }
 
     private void mostrarCompras() {
         if (cliente == null) {
-            contentPanel.getChildren().add(placeholder("📄 Mis Compras", "Inicia sesión para ver tu historial."));
+            contentPanel.getChildren().add(
+                    placeholder("Mis Compras", "Inicia sesion para ver tu historial."));
             return;
         }
         try {
             RegistroCompraView view = new RegistroCompraView(cliente);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("📄 Mis Compras", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Mis Compras", "Sin conexion a la base de datos."));
         }
     }
 
     private void mostrarPerfil() {
         if (cliente == null) {
-            contentPanel.getChildren().add(placeholder("👤 Perfil", "Sin información de usuario."));
+            contentPanel.getChildren().add(
+                    placeholder("Mi Perfil", "Sin informacion de usuario."));
             return;
         }
         try {
             PerfilView view = new PerfilView(cliente);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("👤 Perfil", "Error al cargar el perfil."));
+            contentPanel.getChildren().add(
+                    placeholder("Mi Perfil", "Error al cargar el perfil."));
         }
     }
 
@@ -390,7 +437,8 @@ public class MenuPrincipalView {
             CotizacionView view = new CotizacionView();
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("📝 Cotizaciones", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Cotizaciones", "Sin conexion a la base de datos."));
         }
     }
 
@@ -399,7 +447,8 @@ public class MenuPrincipalView {
             VentasPosView view = new VentasPosView();
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("🖥 Punto de Venta", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Punto de Venta", "Sin conexion a la base de datos."));
         }
     }
 
@@ -408,7 +457,8 @@ public class MenuPrincipalView {
             RegistroVentasView view = new RegistroVentasView();
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("📊 Ventas", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Registro Ventas", "Sin conexion a la base de datos."));
         }
     }
 
@@ -417,7 +467,8 @@ public class MenuPrincipalView {
             MovimientosView view = new MovimientosView();
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("🔄 Inventario", "Sin conexión a la base de datos."));
+            contentPanel.getChildren().add(
+                    placeholder("Inventario", "Sin conexion a la base de datos."));
         }
     }
 
@@ -426,14 +477,15 @@ public class MenuPrincipalView {
             AdminDashboardView view = new AdminDashboardView(cliente);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
-            contentPanel.getChildren().add(placeholder("⚙ Admin", "Error al cargar el panel."));
+            contentPanel.getChildren().add(
+                    placeholder("Panel Admin", "Error al cargar el panel."));
         }
     }
 
     private void cerrarSesion() {
-        Alert conf = new Alert(Alert.AlertType.CONFIRMATION, "¿Cerrar sesión?",
-                ButtonType.YES, ButtonType.NO);
-        conf.setTitle("Cerrar Sesión");
+        Alert conf = new Alert(Alert.AlertType.CONFIRMATION,
+                "Cerrar sesion?", ButtonType.YES, ButtonType.NO);
+        conf.setTitle("Cerrar Sesion");
         conf.showAndWait().ifPresent(r -> {
             if (r == ButtonType.YES) {
                 Stage loginStage = new Stage();
@@ -449,7 +501,8 @@ public class MenuPrincipalView {
         card.setAlignment(Pos.CENTER);
         card.setPrefWidth(190);
         card.setPadding(new Insets(16, 12, 16, 12));
-        card.setStyle("-fx-background-color: #F5F5FA; -fx-border-color: " + color + "; -fx-border-width: 0 0 4 0;");
+        card.setStyle("-fx-background-color: #F5F5FA; -fx-border-color: "
+                + color + "; -fx-border-width: 0 0 4 0;");
         Label lbl = new Label(titulo);
         lbl.setTextFill(Color.GRAY);
         lbl.setFont(Font.font("Arial", 12));
@@ -469,7 +522,7 @@ public class MenuPrincipalView {
     private Canvas crearGraficoBarras(double ancho, double alto) {
         Canvas c = new Canvas(ancho, alto);
         javafx.scene.canvas.GraphicsContext gc = c.getGraphicsContext2D();
-        String[] meses  = {"Ene","Feb","Mar","Abr","May"};
+        String[] meses   = {"Ene", "Feb", "Mar", "Abr", "May"};
         int[]    valores = {25, 40, 35, 55, 48};
         double ml = 40, mb = 28, aw = ancho - ml - 20, ah = alto - mb - 10;
         double bw = aw / meses.length - 10;
@@ -510,9 +563,11 @@ public class MenuPrincipalView {
         return box;
     }
 
-    private boolean esCliente()        { return "CLIENTE".equals(rol); }
-    private boolean esAdmin()          { return "ADMINISTRADOR".equals(rol); }
-    private boolean esEmpleadoOAdmin() { return !esCliente(); }
-    private boolean esCompradorOAdmin(){ return "COMPRADOR".equals(rol) || esAdmin(); }
-    private boolean esBodegueroOAdmin(){ return "BODEGUERO".equals(rol) || esAdmin(); }
+    // ── Verificadores de rol ───────────────────────────────────────────────────
+    private boolean esCliente()          { return "CLIENTE".equals(rol); }
+    private boolean esAdmin()            { return "ADMINISTRADOR".equals(rol); }
+    private boolean esEmpleadoOAdmin()   { return !esCliente(); }
+    private boolean esVendedorOAdmin()   { return "VENDEDOR".equals(rol) || "CAJERO".equals(rol) || esAdmin(); }
+    private boolean esCompradorOAdmin()  { return "COMPRADOR".equals(rol) || esAdmin(); }
+    private boolean esBodegueroOAdmin()  { return "BODEGUERO".equals(rol) || esAdmin(); }
 }

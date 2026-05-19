@@ -570,3 +570,89 @@ ORDER BY p.tipo, c.id_cargo;
   │  Cliente             │  laura@gmail.com        │  laura123    │
   └──────────────────────┴────────────────────────┴──────────────┘
 */
+
+
+-- =============================================================================
+-- TECHZONE — Corrección de usuarios mal asignados
+-- Ejecutar en MySQL Workbench sobre la base de datos techzone
+-- =============================================================================
+ 
+USE techzone;
+ 
+-- -----------------------------------------------------------------------------
+-- PASO 1: Eliminar al admin de la tabla cliente (estaba mal insertado)
+-- -----------------------------------------------------------------------------
+DELETE FROM cliente
+WHERE id_persona = (
+    SELECT id_persona FROM persona WHERE email = 'admin@techzone.co'
+);
+ 
+-- -----------------------------------------------------------------------------
+-- PASO 2: Cambiar el tipo de CLIENTE a EMPLEADO en la tabla persona
+-- -----------------------------------------------------------------------------
+UPDATE persona
+SET tipo = 'EMPLEADO'
+WHERE email = 'admin@techzone.co';
+ 
+-- -----------------------------------------------------------------------------
+-- PASO 3: Insertar en la tabla empleado con cargo 1 (Administrador)
+-- La contraseña 'techzone' queda hasheada igual que los demás empleados
+-- -----------------------------------------------------------------------------
+INSERT INTO empleado (id_persona, id_cargo, fecha_ingreso, contrasena_hash)
+SELECT id_persona, 1, CURDATE(), SHA2('techzone', 256)
+FROM persona
+WHERE email = 'admin@techzone.co';
+ 
+-- -----------------------------------------------------------------------------
+-- PASO 4: Verificar que quedó bien
+-- Deberías ver al admin con cargo = Administrador y tipo = EMPLEADO
+-- -----------------------------------------------------------------------------
+SELECT
+    p.documento,
+    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+    p.tipo,
+    p.email,
+    c.nombre AS cargo
+FROM persona p
+LEFT JOIN empleado e ON p.id_persona = e.id_persona
+LEFT JOIN cargo    c ON e.id_cargo   = c.id_cargo
+WHERE p.email = 'admin@techzone.co';
+ 
+-- -----------------------------------------------------------------------------
+-- PASO 5: Verificar todos los usuarios del sistema para confirmar integridad
+-- -----------------------------------------------------------------------------
+SELECT
+    p.documento,
+    CONCAT(p.nombres, ' ', p.apellidos) AS nombre_completo,
+    p.tipo,
+    p.email,
+    c.nombre AS cargo
+FROM persona p
+LEFT JOIN empleado e ON p.id_persona = e.id_persona
+LEFT JOIN cargo    c ON e.id_cargo   = c.id_cargo
+ORDER BY p.tipo, c.id_cargo;
+
+
+-- Ver la definicion exacta de la FK de documento
+SELECT 
+    CONSTRAINT_NAME,
+    COLUMN_NAME,
+    REFERENCED_TABLE_NAME,
+    REFERENCED_COLUMN_NAME
+FROM information_schema.KEY_COLUMN_USAGE
+WHERE TABLE_SCHEMA = 'techzone'
+  AND TABLE_NAME   = 'documento'
+  AND COLUMN_NAME  = 'id_empleado';
+
+-- Ver si la columna ya acepta NULL
+SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = 'techzone'
+  AND TABLE_NAME   = 'documento'
+  AND COLUMN_NAME  = 'id_empleado';
+
+
+
+
+
+ 

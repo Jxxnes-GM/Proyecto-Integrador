@@ -99,7 +99,7 @@ public class ProductoView {
         TableColumn<FilaProducto, Void> colAccion = new TableColumn<>("Acción");
         colAccion.setMaxWidth(130);
         colAccion.setCellFactory(col -> new TableCell<>() {
-            private final Button btn = crearBoton("🛒 Comprar", "#00C8FF");
+            private final Button btn = crearBoton(" Comprar", "#00C8FF");
             {
                 btn.setOnAction(e -> {
                     FilaProducto fila = getTableView().getItems().get(getIndex());

@@ -288,14 +288,14 @@ public class RegistroView {
 
     private void error(String msg, Control foco) {
         lblMensaje.setTextFill(Color.web("#FF4444"));
-        lblMensaje.setText("⚠ " + msg);
+        lblMensaje.setText(" " + msg);
         if (foco != null)
             foco.requestFocus();
     }
 
     private void exito(String msg) {
         lblMensaje.setTextFill(Color.web("#00C84B"));
-        lblMensaje.setText("✓ " + msg);
+        lblMensaje.setText(" " + msg);
     }
 
     private void limpiarMensaje() {
