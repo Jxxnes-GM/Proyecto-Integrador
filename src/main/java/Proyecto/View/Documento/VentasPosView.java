@@ -94,7 +94,7 @@ public class VentasPosView {
         header.setPadding(new Insets(0, 0, 10, 0));
         header.setStyle("-fx-border-color: #E0E0E0; -fx-border-width: 0 0 2 0;");
 
-        Label lblTitulo = new Label("🖥  Punto de Venta");
+        Label lblTitulo = new Label("  Punto de Venta");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
@@ -117,7 +117,7 @@ public class VentasPosView {
         leftCol.setPrefWidth(300);
         leftCol.setMaxWidth(320);
 
-        VBox secBuscar = seccion("🔍  Buscar Producto");
+        VBox secBuscar = seccion("  Buscar Producto");
 
         txtBuscador = new TextField();
         txtBuscador.setPromptText("Nombre o ID del producto...");
@@ -142,7 +142,7 @@ public class VentasPosView {
         spinnerCantidad.setEditable(true);
         spinnerCantidad.setPrefWidth(90);
 
-        Button btnAgregar = boton("➕ Agregar al ticket", "#1A8A2A");
+        Button btnAgregar = boton(" Agregar al ticket", "#1A8A2A");
         btnAgregar.setMaxWidth(Double.MAX_VALUE);
         btnAgregar.setOnAction(e -> agregarProducto());
 
@@ -157,7 +157,7 @@ public class VentasPosView {
         HBox.setHgrow(rightCol, Priority.ALWAYS);
 
         // Tabla del ticket
-        VBox secTicket = seccion("🧾  Ticket de Venta");
+        VBox secTicket = seccion("  Ticket de Venta");
         VBox.setVgrow(secTicket, Priority.ALWAYS);
 
         tablaTicket = new TableView<>(itemsVenta);
@@ -229,7 +229,7 @@ public class VentasPosView {
         secTicket.getChildren().addAll(tablaTicket, gridTotales);
 
         // Sección cobro
-        VBox secCobro = seccion("💳  Cobro y Facturación");
+        VBox secCobro = seccion("  Cobro y Facturación");
 
         cbMetodoPago = new ComboBox<>();
         cbMetodoPago.getItems().addAll("Efectivo", "Tarjeta Débito", "Tarjeta Crédito",
@@ -246,8 +246,8 @@ public class VentasPosView {
         HBox btnCobro = new HBox(10);
         btnCobro.setAlignment(Pos.CENTER_RIGHT);
 
-        Button btnCancelar = boton("❌ Cancelar venta", "#646464");
-        Button btnCobrar = boton("✅ Cobrar y emitir factura", "#1A8A2A");
+        Button btnCancelar = boton(" Cancelar venta", "#646464");
+        Button btnCobrar = boton(" Cobrar y emitir factura", "#1A8A2A");
         btnCobrar.setPrefHeight(42);
         btnCobrar.setFont(Font.font("Arial", FontWeight.BOLD, 14));
 

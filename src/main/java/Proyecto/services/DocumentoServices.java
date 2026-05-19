@@ -18,235 +18,161 @@ import java.util.stream.Collectors;
 
 public class DocumentoServices {
 
-    private DocumentoDAO documentoDAO;
-    private InventarioDAO inventarioDAO;
-    private CarritoDAO carritoDAO;
+    private DocumentoDAO   documentoDAO;
+    private InventarioDAO  inventarioDAO;
+    private CarritoDAO     carritoDAO;
     private ItemCarritoDAO itemCarritoDAO;
 
     public DocumentoServices() {
-        this.documentoDAO = new DocumentoDAO();
-        this.inventarioDAO = new InventarioDAO();
-        this.carritoDAO = new CarritoDAO();
+        this.documentoDAO   = new DocumentoDAO();
+        this.inventarioDAO  = new InventarioDAO();
+        this.carritoDAO     = new CarritoDAO();
         this.itemCarritoDAO = new ItemCarritoDAO();
     }
 
-    // Crear documento de venta
-    public int crearDocumentoVenta(int idCliente, int idEmpleado, double descuento, String observaciones) {
-        // Obtener carrito del cliente
+    public int crearDocumentoVenta(int idCliente, int idEmpleado,
+                                   double descuento, String observaciones) {
         Carrito carrito = carritoDAO.obtenerCarritoActivoDelCliente(idCliente);
         if (carrito == null || carrito.estaVacio()) {
-            System.out.println("Error: Carrito vacío");
+            System.out.println("Error: Carrito vacio");
             return -1;
         }
 
-        // Calcular total
         double total = carrito.getTotal() - descuento;
-        if (total < 0)
-            total = 0;
+        if (total < 0) total = 0;
 
-        // Crear documento (tipo 1 = Factura de venta)
+        // idEmpleado = 0 → DocumentoDAO insertara NULL en la FK
         int idDocumento = documentoDAO.crearDocumento(
-                1,
-                idCliente,
-                idEmpleado,
-                descuento,
-                total,
-                observaciones);
+                1, idCliente, idEmpleado, descuento, total, observaciones);
 
         if (idDocumento != -1) {
-            // Registrar movimientos de inventario y actualizar stock
-            List<ItemCarrito> items = itemCarritoDAO.obtenerItemsDelCarrito(carrito.getCliente().getId());
+            List<ItemCarrito> items =
+                    itemCarritoDAO.obtenerItemsDelCarrito(carrito.getCliente().getId());
             for (ItemCarrito item : items) {
-                // Registrar movimiento
                 inventarioDAO.registrarMovimiento(
                         idDocumento,
                         item.getProducto().getIdProducto(),
                         idEmpleado,
                         item.getCantidad(),
                         item.getSubtotal());
-                // Disminuir stock
-                inventarioDAO.actualizarStock(item.getProducto().getIdProducto(), -item.getCantidad());
+                inventarioDAO.actualizarStock(
+                        item.getProducto().getIdProducto(),
+                        -item.getCantidad());
             }
-
-            // Limpiar carrito
             itemCarritoDAO.limpiarCarrito(carrito.getCliente().getId());
-            System.out.println("Documento de venta creado exitosamente. ID: " + idDocumento);
+            System.out.println("Venta registrada. ID: " + idDocumento);
         }
-
         return idDocumento;
     }
 
-    // Obtener documento por ID
+    /**
+     * Llamado por CarritoView al presionar "Finalizar Compra".
+     * Pasa 0 como idEmpleado para que DocumentoDAO envie NULL a la BD,
+     * evitando la violacion de FK cuando compra un cliente sin empleado asignado.
+     */
+    public int registrarCompra(int idCliente) {
+        return crearDocumentoVenta(idCliente, 0, 0, "Compra en linea");
+    }
+
     public Map<String, Object> obtenerDocumento(int idDocumento) {
         return documentoDAO.obtenerDocumentoPorId(idDocumento);
     }
 
-    // Obtener documentos del cliente
     public List<Map<String, Object>> obtenerDocumentosDelCliente(int idCliente) {
         return documentoDAO.obtenerDocumentosPorCliente(idCliente);
     }
 
-    // Obtener documentos por tipo
     public List<Map<String, Object>> obtenerDocumentosPorTipo(int idTipoDocumento) {
         return documentoDAO.obtenerDocumentosPorTipo(idTipoDocumento);
     }
 
-    // Obtener todos los documentos
     public List<Map<String, Object>> obtenerTodosLosDocumentos() {
         return documentoDAO.obtenerTodosLosDocumentos();
     }
 
-    // Obtener detalles del documento
     public List<Map<String, Object>> obtenerDetallesDocumento(int idDocumento) {
         return inventarioDAO.obtenerMovimientosPorDocumento(idDocumento);
     }
 
-    // Generar reporte de ventas del cliente
     public String generarReporteVentasCliente(int idCliente) {
-        List<Map<String, Object>> documentos = documentoDAO.obtenerDocumentosPorCliente(idCliente);
-
-        if (documentos.isEmpty()) {
-            return "No hay compras registradas para este cliente";
-        }
-
-        StringBuilder reporte = new StringBuilder();
-        reporte.append("╔════════════════════════════════════════╗\n");
-        reporte.append("║    REPORTE DE COMPRAS DEL CLIENTE     ║\n");
-        reporte.append("╚════════════════════════════════════════╝\n\n");
-
-        double totalGastado = 0;
-        int cantidadCompras = 0;
-
+        List<Map<String, Object>> documentos =
+                documentoDAO.obtenerDocumentosPorCliente(idCliente);
+        if (documentos.isEmpty()) return "No hay compras registradas para este cliente";
+        StringBuilder sb = new StringBuilder();
+        sb.append("REPORTE DE COMPRAS DEL CLIENTE\n================================\n\n");
+        double total = 0; int count = 0;
         for (Map<String, Object> doc : documentos) {
-            double total = (double) doc.get("total");
-            totalGastado += total;
-            cantidadCompras++;
-
-            reporte.append("─────────────────────────────────\n")
-                    .append("Documento: ").append(doc.get("idDocumento")).append("\n")
-                    .append("  Fecha: ").append(doc.get("fecha")).append("\n")
-                    .append("  Total: $").append(String.format("%.2f", total)).append("\n")
-                    .append("  Observaciones: ").append(doc.get("observaciones")).append("\n\n");
+            double t = (double) doc.get("total");
+            total += t; count++;
+            sb.append("Documento: ").append(doc.get("idDocumento")).append("\n")
+              .append("  Fecha: ").append(doc.get("fecha")).append("\n")
+              .append("  Total: $").append(String.format("%.2f", t)).append("\n\n");
         }
-
-        reporte.append("─────────────────────────────────\n");
-        reporte.append("RESUMEN:\n");
-        reporte.append("  Cantidad de compras: ").append(cantidadCompras).append("\n");
-        reporte.append("  Total gastado: $").append(String.format("%.2f", totalGastado)).append("\n");
-        reporte.append("  Promedio por compra: $").append(String.format("%.2f", totalGastado / cantidadCompras))
-                .append("\n");
-
-        return reporte.toString();
+        sb.append("Total compras: ").append(count).append("\n");
+        sb.append("Total gastado: $").append(String.format("%.2f", total)).append("\n");
+        return sb.toString();
     }
 
-    // Generar reporte de ventas totales
     public String generarReporteVentasTotales() {
         List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos();
-
-        StringBuilder reporte = new StringBuilder();
-        reporte.append("╔════════════════════════════════════════╗\n");
-        reporte.append("║         REPORTE DE VENTAS TOTALES     ║\n");
-        reporte.append("╚════════════════════════════════════════╝\n\n");
-
-        double totalVentas = 0;
-        double totalDescuentos = 0;
-        int cantidadDocumentos = 0;
-
+        StringBuilder sb = new StringBuilder();
+        sb.append("REPORTE DE VENTAS TOTALES\n==========================\n\n");
+        double totalVentas = 0, totalDesc = 0; int cantidad = 0;
         for (Map<String, Object> doc : documentos) {
-            double total = (double) doc.get("total");
-            double descuento = (double) doc.get("descuento");
-            totalVentas += total;
-            totalDescuentos += descuento;
-            cantidadDocumentos++;
+            totalVentas += (double) doc.get("total");
+            totalDesc   += (double) doc.get("descuento");
+            cantidad++;
         }
-
-        reporte.append("Total de documentos: ").append(cantidadDocumentos).append("\n");
-        reporte.append("Total de ventas: $").append(String.format("%.2f", totalVentas)).append("\n");
-        reporte.append("Total de descuentos: $").append(String.format("%.2f", totalDescuentos)).append("\n");
-        reporte.append("Venta promedio: $").append(String.format("%.2f", totalVentas / cantidadDocumentos))
-                .append("\n");
-
-        return reporte.toString();
+        sb.append("Total documentos: ").append(cantidad).append("\n");
+        sb.append("Total ventas: $").append(String.format("%.2f", totalVentas)).append("\n");
+        sb.append("Total descuentos: $").append(String.format("%.2f", totalDesc)).append("\n");
+        if (cantidad > 0)
+            sb.append("Promedio: $")
+              .append(String.format("%.2f", totalVentas / cantidad)).append("\n");
+        return sb.toString();
     }
 
-    // Generar factura
     public String generarFactura(int idDocumento) {
-        Map<String, Object> documento = obtenerDocumento(idDocumento);
-
-        if (documento == null) {
-            return "Documento no encontrado";
-        }
-
-        StringBuilder factura = new StringBuilder();
-        factura.append("╔════════════════════════════════════════╗\n");
-        factura.append("║              FACTURA                 ║\n");
-        factura.append("╚════════════════════════════════════════╝\n\n");
-
-        factura.append("Número de Documento: ").append(documento.get("idDocumento")).append("\n");
-        factura.append("Fecha: ").append(documento.get("fecha")).append("\n");
-        factura.append("Cliente ID: ").append(documento.get("idPersona")).append("\n");
-        factura.append("Empleado ID: ").append(documento.get("idEmpleado")).append("\n\n");
-
-        // Obtener detalles
-        List<Map<String, Object>> detalles = obtenerDetallesDocumento(idDocumento);
-        factura.append("DETALLES:\n");
-        factura.append("─────────────────────────────────\n");
-
-        for (Map<String, Object> detalle : detalles) {
-            factura.append("  Cantidad: ").append(detalle.get("cantidad")).append("\n")
-                    .append("  Subtotal: $").append(String.format("%.2f", detalle.get("subtotal"))).append("\n\n");
-        }
-
-        factura.append("─────────────────────────────────\n");
-        factura.append("Descuento: $").append(String.format("%.2f", documento.get("descuento"))).append("\n");
-        factura.append("TOTAL: $").append(String.format("%.2f", documento.get("total"))).append("\n\n");
-        factura.append("Observaciones: ").append(documento.get("observaciones")).append("\n");
-
-        return factura.toString();
-    }
-
-    // ── Alias de métodos para compatibilidad con vistas ────────────────────
-    public int registrarCompra(int idCliente) {
-        // Asumimos que el empleado es 1 por defecto (puede ajustarse)
-        return crearDocumentoVenta(idCliente, 1, 0, "");
+        Map<String, Object> doc = obtenerDocumento(idDocumento);
+        if (doc == null) return "Documento no encontrado";
+        StringBuilder sb = new StringBuilder();
+        sb.append("FACTURA\n=======\n\nNumero: ").append(doc.get("idDocumento"))
+          .append("\nFecha:  ").append(doc.get("fecha")).append("\n\n");
+        for (Map<String, Object> d : obtenerDetallesDocumento(idDocumento))
+            sb.append("  Cantidad: ").append(d.get("cantidad"))
+              .append("\n  Subtotal: $")
+              .append(String.format("%.2f", d.get("subtotal"))).append("\n\n");
+        sb.append("Descuento: $").append(String.format("%.2f", doc.get("descuento")))
+          .append("\nTOTAL:     $").append(String.format("%.2f", doc.get("total"))).append("\n");
+        return sb.toString();
     }
 
     public List<Compra> obtenerComprasCliente(int idCliente) {
-        List<Map<String, Object>> mapas = obtenerDocumentosDelCliente(idCliente);
-        return mapas.stream()
-                .map(Compra::fromMap)
-                .collect(Collectors.toList());
+        return obtenerDocumentosDelCliente(idCliente).stream()
+                .map(Compra::fromMap).collect(Collectors.toList());
     }
 
     public List<DetalleCompra> obtenerDetalleCompra(int idCompra) {
-        List<Map<String, Object>> mapas = obtenerDetallesDocumento(idCompra);
-        return mapas.stream()
-                .map(DetalleCompra::fromMap)
-                .collect(Collectors.toList());
+        return obtenerDetallesDocumento(idCompra).stream()
+                .map(DetalleCompra::fromMap).collect(Collectors.toList());
     }
 
     public List<Venta> obtenerTodasLasVentas() {
-        List<Map<String, Object>> documentos = obtenerTodosLosDocumentos();
         PersonaDAO personaDAO = new PersonaDAO();
-
-        return documentos.stream()
+        return obtenerTodosLosDocumentos().stream()
                 .map(doc -> {
-                    int idCliente = ((Number) doc.get("idPersona")).intValue();
-                    Cliente cliente = personaDAO.obtenerClientePorId(idCliente);
+                    int     idCli   = ((Number) doc.get("idPersona")).intValue();
+                    Cliente cliente = personaDAO.obtenerClientePorId(idCli);
                     return Venta.fromMap(doc, cliente);
-                })
-                .collect(Collectors.toList());
+                }).collect(Collectors.toList());
     }
 
     public List<Venta> obtenerVentasPorRango(LocalDate fechaInicio, LocalDate fechaFin) {
-        List<Venta> todas = obtenerTodasLasVentas();
-
-        return todas.stream()
-                .filter(venta -> !venta.getFecha().isBefore(fechaInicio) && !venta.getFecha().isAfter(fechaFin))
+        return obtenerTodasLasVentas().stream()
+                .filter(v -> !v.getFecha().isBefore(fechaInicio)
+                          && !v.getFecha().isAfter(fechaFin))
                 .collect(Collectors.toList());
     }
 
-    public String generarReporteVentas() {
-        return generarReporteVentasTotales();
-    }
+    public String generarReporteVentas() { return generarReporteVentasTotales(); }
 }

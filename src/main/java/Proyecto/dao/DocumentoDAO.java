@@ -9,17 +9,38 @@ import java.util.Map;
 
 public class DocumentoDAO {
 
-    // Crear documento
-    public int crearDocumento(int idTipoDocumento, int idPersona, int idEmpleado, double descuento, double total, String observaciones) {
-        String sql = "INSERT INTO documento (id_tipo_documento, id_persona, id_empleado, descuento, total, observaciones, fecha_documento) " +
+    /**
+     * Crea un documento en la BD.
+     * Si idEmpleado <= 0 se inserta NULL en esa columna, evitando
+     * la violacion de FK cuando quien compra es un cliente sin empleado asignado.
+     *
+     * REQUISITO en MySQL: la columna debe aceptar NULL.
+     * Ejecuta esto una sola vez en Workbench si aun no lo hiciste:
+     *
+     *   ALTER TABLE documento MODIFY id_empleado INT NULL;
+     */
+    public int crearDocumento(int idTipoDocumento, int idPersona, int idEmpleado,
+                              double descuento, double total, String observaciones) {
+
+        String sql = "INSERT INTO documento " +
+                     "(id_tipo_documento, id_persona, id_empleado, " +
+                     " descuento, total, observaciones, fecha_documento) " +
                      "VALUES (?, ?, ?, ?, ?, ?, NOW())";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-             PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+             PreparedStatement pstmt = conexion.prepareStatement(
+                     sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, idTipoDocumento);
             pstmt.setInt(2, idPersona);
-            pstmt.setInt(3, idEmpleado);
+
+            // Si no hay empleado (compra de cliente en linea) se envia NULL
+            if (idEmpleado > 0) {
+                pstmt.setInt(3, idEmpleado);
+            } else {
+                pstmt.setNull(3, Types.INTEGER);
+            }
+
             pstmt.setDouble(4, descuento);
             pstmt.setDouble(5, total);
             pstmt.setString(6, observaciones);
@@ -45,10 +66,8 @@ public class DocumentoDAO {
 
             pstmt.setInt(1, idDocumento);
             ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) return mapearDocumento(rs);
 
-            if (rs.next()) {
-                return mapearDocumento(rs);
-            }
         } catch (SQLException e) {
             System.err.println("Error al obtener documento: " + e.getMessage());
         }
@@ -65,10 +84,8 @@ public class DocumentoDAO {
 
             pstmt.setInt(1, idCliente);
             ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) documentos.add(mapearDocumento(rs));
 
-            while (rs.next()) {
-                documentos.add(mapearDocumento(rs));
-            }
         } catch (SQLException e) {
             System.err.println("Error al obtener documentos del cliente: " + e.getMessage());
         }
@@ -85,10 +102,8 @@ public class DocumentoDAO {
 
             pstmt.setInt(1, idTipoDocumento);
             ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) documentos.add(mapearDocumento(rs));
 
-            while (rs.next()) {
-                documentos.add(mapearDocumento(rs));
-            }
         } catch (SQLException e) {
             System.err.println("Error al obtener documentos por tipo: " + e.getMessage());
         }
@@ -104,9 +119,8 @@ public class DocumentoDAO {
              Statement stmt = conexion.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
 
-            while (rs.next()) {
-                documentos.add(mapearDocumento(rs));
-            }
+            while (rs.next()) documentos.add(mapearDocumento(rs));
+
         } catch (SQLException e) {
             System.err.println("Error al obtener documentos: " + e.getMessage());
         }
@@ -114,8 +128,10 @@ public class DocumentoDAO {
     }
 
     // Actualizar documento
-    public boolean actualizarDocumento(int idDocumento, double descuento, double total, String observaciones) {
-        String sql = "UPDATE documento SET descuento = ?, total = ?, observaciones = ? WHERE id_documento = ?";
+    public boolean actualizarDocumento(int idDocumento, double descuento,
+                                       double total, String observaciones) {
+        String sql = "UPDATE documento SET descuento = ?, total = ?, " +
+                     "observaciones = ? WHERE id_documento = ?";
 
         try (Connection conexion = conexionBD.obtenerConexion();
              PreparedStatement pstmt = conexion.prepareStatement(sql)) {
@@ -124,8 +140,8 @@ public class DocumentoDAO {
             pstmt.setDouble(2, total);
             pstmt.setString(3, observaciones);
             pstmt.setInt(4, idDocumento);
-
             return pstmt.executeUpdate() > 0;
+
         } catch (SQLException e) {
             System.err.println("Error al actualizar documento: " + e.getMessage());
         }
@@ -133,15 +149,16 @@ public class DocumentoDAO {
     }
 
     private Map<String, Object> mapearDocumento(ResultSet rs) throws SQLException {
-        Map<String, Object> documento = new HashMap<>();
-        documento.put("idDocumento", rs.getInt("id_documento"));
-        documento.put("idTipoDocumento", rs.getInt("id_tipo_documento"));
-        documento.put("idPersona", rs.getInt("id_persona"));
-        documento.put("idEmpleado", rs.getInt("id_empleado"));
-        documento.put("descuento", rs.getDouble("descuento"));
-        documento.put("total", rs.getDouble("total"));
-        documento.put("observaciones", rs.getString("observaciones"));
-        documento.put("fecha", rs.getTimestamp("fecha_documento"));
-        return documento;
+        Map<String, Object> doc = new HashMap<>();
+        doc.put("idDocumento",      rs.getInt("id_documento"));
+        doc.put("idTipoDocumento",  rs.getInt("id_tipo_documento"));
+        doc.put("idPersona",        rs.getInt("id_persona"));
+        doc.put("idEmpleado",       rs.getObject("id_empleado")); // puede ser NULL
+        doc.put("descuento",        rs.getDouble("descuento"));
+        doc.put("total",            rs.getDouble("total"));
+        doc.put("observaciones",    rs.getString("observaciones"));
+        doc.put("fecha",            rs.getTimestamp("fecha_documento"));
+        doc.put("estado",           "Completada");
+        return doc;
     }
 }

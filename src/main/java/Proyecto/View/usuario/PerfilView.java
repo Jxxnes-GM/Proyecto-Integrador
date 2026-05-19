@@ -47,7 +47,6 @@ public class PerfilView {
     }
 
     // ── Construcción de la interfaz ───────────────────────────────────────────
-    @SuppressWarnings("unused")
     private void build() {
         root = new VBox(20);
         root.setPadding(new Insets(15));
@@ -67,7 +66,7 @@ public class PerfilView {
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
 
-        Button btnGuardar = boton("💾  Guardar cambios", "#00C8FF");
+        Button btnGuardar = boton("  Guardar cambios", "#00C8FF");
         btnGuardar.setOnAction(e -> guardarCambios());
 
         header.getChildren().addAll(lblTitulo, spacer, btnGuardar);
@@ -179,12 +178,12 @@ public class PerfilView {
         limpiarEstado();
 
         if (txtNombres.getText().trim().isEmpty() || txtApellidos.getText().trim().isEmpty()) {
-            estado("⚠ Nombres y Apellidos son obligatorios.", false);
+            estado(" Nombres y Apellidos son obligatorios.", false);
             return;
         }
 
         if (cliente == null) {
-            estado("⚠ No hay un cliente cargado.", false);
+            estado(" No hay un cliente cargado.", false);
             return;
         }
 
@@ -210,9 +209,9 @@ public class PerfilView {
             boolean exito = ok;
             Platform.runLater(() -> {
                 if (exito)
-                    estado("✓ Datos actualizados correctamente.", true);
+                    estado(" Datos actualizados correctamente.", true);
                 else
-                    estado("✗ Error al actualizar. Intenta de nuevo.", false);
+                    estado(" Error al actualizar. Intenta de nuevo.", false);
             });
         }).start();
     }
@@ -225,19 +224,19 @@ public class PerfilView {
         String confirmar = txtPassConfirmar.getText();
 
         if (actual.isEmpty() || nueva.isEmpty() || confirmar.isEmpty()) {
-            estado("⚠ Completa todos los campos de contraseña.", false);
+            estado(" Completa todos los campos de contraseña.", false);
             return;
         }
         if (nueva.length() < 6) {
-            estado("⚠ La nueva contraseña debe tener al menos 6 caracteres.", false);
+            estado(" La nueva contraseña debe tener al menos 6 caracteres.", false);
             return;
         }
         if (!nueva.equals(confirmar)) {
-            estado("⚠ La nueva contraseña y la confirmación no coinciden.", false);
+            estado(" La nueva contraseña y la confirmación no coinciden.", false);
             return;
         }
         if (cliente == null) {
-            estado("⚠ No hay un cliente cargado.", false);
+            estado(" No hay un cliente cargado.", false);
             return;
         }
 
@@ -252,12 +251,12 @@ public class PerfilView {
             boolean exito = ok;
             Platform.runLater(() -> {
                 if (exito) {
-                    estado("✓ Contraseña cambiada exitosamente.", true);
+                    estado(" Contraseña cambiada exitosamente.", true);
                     txtPassActual.clear();
                     txtPassNueva.clear();
                     txtPassConfirmar.clear();
                 } else {
-                    estado("✗ Contraseña actual incorrecta o error al actualizar.", false);
+                    estado(" Contraseña actual incorrecta o error al actualizar.", false);
                 }
             });
         }).start();

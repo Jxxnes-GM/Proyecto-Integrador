@@ -53,7 +53,7 @@ public class RegistroVentasView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        Label lblTitulo = new Label("📊  Registro de Ventas");
+        Label lblTitulo = new Label("  Registro de Ventas");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 22));
         lblTitulo.setTextFill(Color.web("#0A1933"));
 
@@ -67,9 +67,9 @@ public class RegistroVentasView {
         dpHasta = new DatePicker();
         dpHasta.setPromptText("Hasta");
 
-        Button btnFiltrar = boton("🔍 Filtrar", "#00C8FF");
-        Button btnLimpiar = boton("✖ Limpiar", "#646464");
-        Button btnExportar = boton("📥 Exportar Reporte", "#0A1933");
+        Button btnFiltrar = boton(" Filtrar", "#00C8FF");
+        Button btnLimpiar = boton(" Limpiar", "#646464");
+        Button btnExportar = boton(" Exportar Reporte", "#0A1933");
 
         btnFiltrar.setOnAction(e -> filtrarVentas());
         btnLimpiar.setOnAction(e -> {
@@ -107,7 +107,7 @@ public class RegistroVentasView {
 
         // ── Tabla de ventas ───────────────────────────────────────────────
         tablaVentas = new TableView<>(ventas);
-        // ✅ Correcto para JavaFX 21
+        //  Correcto para JavaFX 21
         tablaVentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaVentas, Priority.ALWAYS);
 
