@@ -2,7 +2,6 @@ package Proyecto.Model;
 
 public abstract class Persona {
 
-    // Atributos protegidos - accesibles en clases hijas
     protected int id;
     protected String nombre;
     protected String apellido;
@@ -12,13 +11,11 @@ public abstract class Persona {
     protected String direccion;
     protected Boolean activo;
 
-    // Constructor vacio
     public Persona() {
     }
 
-    // Constructor con parametros
-    public Persona(int id, String nombre, String apellido, String documento, String telefono, String email,
-            String direccion) {
+    public Persona(int id, String nombre, String apellido, String documento,
+            String telefono, String email, String direccion) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
@@ -29,93 +26,95 @@ public abstract class Persona {
         this.activo = true;
     }
 
-    // Getters y Setters
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        if (id < 0) {
-            throw new IllegalArgumentException("El ID no puede ser negativo");
-        }
-        this.id = id;
     }
 
     public String getNombre() {
         return nombre;
     }
 
-    public void setNombre(String nombre) {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new IllegalArgumentException("El nombre no puede estar vacío");
-        }
-        this.nombre = nombre.trim();
-    }
-
     public String getApellido() {
         return apellido;
-    }
-
-    public void setApellido(String apellido) {
-        if (apellido == null || apellido.trim().isEmpty()) {
-            throw new IllegalArgumentException("El apellido no puede estar vacío");
-        }
-        this.apellido = apellido.trim();
     }
 
     public String getDocumento() {
         return documento;
     }
 
-    public void setDocumento(String documento) {
-        if (documento == null || documento.trim().isEmpty()) {
-            throw new IllegalArgumentException("El documento no puede estar vacío");
-        }
-        this.documento = documento.trim();
-    }
-
     public String getTelefono() {
         return telefono;
-    }
-
-    public void setTelefono(String telefono) {
-        if (telefono != null && !telefono.trim().isEmpty()) {
-            // Validación básica - solo números, espacios, guiones, paréntesis y +
-            if (!telefono.matches("^[\\d\\s\\-\\(\\)\\+]+$")) {
-                throw new IllegalArgumentException("Formato de teléfono inválido");
-            }
-        }
-        this.telefono = telefono != null ? telefono.trim() : null;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
-        if (email == null || email.trim().isEmpty()) {
-            throw new IllegalArgumentException("El email no puede estar vacío");
-        }
-        // Validación básica de formato de email
-        if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
-            throw new IllegalArgumentException("Formato de email inválido");
-        }
-        this.email = email.trim().toLowerCase();
-    }
-
     public String getDireccion() {
         return direccion;
     }
 
-    public void setDireccion(String direccion) {
-        if (direccion == null || direccion.trim().isEmpty()) {
-            throw new IllegalArgumentException("La dirección no puede estar vacía");
-        }
-        this.direccion = direccion.trim();
-    }
-
     public Boolean getActivo() {
         return activo;
+    }
+
+    public void setId(int id) {
+        if (id < 0)
+            throw new IllegalArgumentException("El ID no puede ser negativo");
+        this.id = id;
+    }
+
+    public void setNombre(String nombre) {
+        if (nombre == null || nombre.trim().isEmpty())
+            throw new IllegalArgumentException("El nombre no puede estar vacio");
+        this.nombre = nombre.trim();
+    }
+
+    public void setApellido(String apellido) {
+        if (apellido == null || apellido.trim().isEmpty())
+            throw new IllegalArgumentException("El apellido no puede estar vacio");
+        this.apellido = apellido.trim();
+    }
+
+    public void setDocumento(String documento) {
+        if (documento == null || documento.trim().isEmpty())
+            throw new IllegalArgumentException("El documento no puede estar vacio");
+        this.documento = documento.trim();
+    }
+
+    public void setTelefono(String telefono) {
+        if (telefono != null && !telefono.trim().isEmpty()) {
+            String limpio = telefono.trim();
+            // Acepta digitos, espacios, guiones, parentesis, signo +
+            if (!limpio.matches("^[\\d\\s\\-\\(\\)\\+]+$")) {
+                throw new IllegalArgumentException("Formato de telefono invalido: " + telefono);
+            }
+            this.telefono = limpio;
+        } else {
+            this.telefono = null;
+        }
+    }
+
+    public void setEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            this.email = null;
+            return;
+        }
+        String limpio = email.trim().toLowerCase();
+        if (!limpio.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+            throw new IllegalArgumentException("Formato de email invalido: " + email);
+        }
+        this.email = limpio;
+    }
+
+    /**
+     * CORRECCION: direccion opcional. No lanza excepcion con null o vacio.
+     * En la BD la columna acepta NULL.
+     */
+    public void setDireccion(String direccion) {
+        this.direccion = (direccion != null && !direccion.trim().isEmpty())
+                ? direccion.trim()
+                : null;
     }
 
     public void setActivo(Boolean activo) {
@@ -124,7 +123,7 @@ public abstract class Persona {
 
     @Override
     public String toString() {
-        return String.format("ID: %d, Nombre: %s, Apellido: %s, Documento: %s, Email: %s, Activo: %s",
-                id, nombre, apellido, documento, email, activo);
+        return String.format("ID: %d, Nombre: %s %s, Email: %s, Activo: %s",
+                id, nombre, apellido, email, activo);
     }
 }

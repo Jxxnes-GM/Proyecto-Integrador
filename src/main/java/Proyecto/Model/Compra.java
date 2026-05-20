@@ -1,13 +1,12 @@
 package Proyecto.Model;
 
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Modelo de datos para representar una compra (documento de venta)
- */
 public class Compra {
+
     private int id;
     private LocalDate fecha;
     private List<DetalleCompra> detalles;
@@ -22,7 +21,6 @@ public class Compra {
         this.estado = estado;
     }
 
-    // Getters
     public int getId() {
         return id;
     }
@@ -43,7 +41,6 @@ public class Compra {
         return estado;
     }
 
-    // Setters
     public void setId(int id) {
         this.id = id;
     }
@@ -64,26 +61,33 @@ public class Compra {
         this.estado = estado;
     }
 
-    /**
-     * Crea una Compra desde un Map devuelto por la DAO
-     */
     public static Compra fromMap(Map<String, Object> data) {
         int id = ((Number) data.get("idDocumento")).intValue();
-        String fechaStr = (String) data.get("fecha");
-        LocalDate fecha = LocalDate.parse(fechaStr);
-        double total = ((Number) data.get("total")).doubleValue();
-        String estado = (String) data.get("estado");
+
+        LocalDate fecha;
+        Object fechaObj = data.get("fecha");
+        if (fechaObj instanceof Timestamp) {
+            fecha = ((Timestamp) fechaObj).toLocalDateTime().toLocalDate();
+        } else if (fechaObj instanceof java.sql.Date) {
+            fecha = ((java.sql.Date) fechaObj).toLocalDate();
+        } else if (fechaObj instanceof String) {
+            try {
+                fecha = LocalDate.parse((String) fechaObj);
+            } catch (Exception e) {
+                fecha = LocalDate.now();
+            }
+        } else {
+            fecha = LocalDate.now();
+        }
+
+        double total = data.get("total") != null ? ((Number) data.get("total")).doubleValue() : 0.0;
+        String estado = data.get("estado") != null ? (String) data.get("estado") : "COMPLETADA";
 
         return new Compra(id, fecha, List.of(), total, estado);
     }
 
     @Override
     public String toString() {
-        return "Compra{" +
-                "id=" + id +
-                ", fecha=" + fecha +
-                ", total=" + total +
-                ", estado='" + estado + '\'' +
-                '}';
+        return "Compra{id=" + id + ", fecha=" + fecha + ", total=" + total + ", estado='" + estado + "'}";
     }
 }
