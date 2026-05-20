@@ -1,8 +1,11 @@
 package Proyecto.View.Admin;
 
 import Proyecto.Model.Cliente;
-import Proyecto.services.*;
-import javafx.beans.property.SimpleIntegerProperty;
+import Proyecto.services.CategoriaServices;
+import Proyecto.services.DocumentoServices;
+import Proyecto.services.InventarioServices;
+import Proyecto.services.PersonaServices;
+import Proyecto.services.ProductoServices;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,7 +15,6 @@ import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -38,6 +40,7 @@ public class AdminDashboardView {
     private final ProductoServices productoServices;
     private final InventarioServices inventarioServices;
     private final DocumentoServices documentoServices;
+    private final PersonaServices personaServices;
 
     // Labels de métricas
     private Label lblTotalProductos;
@@ -53,6 +56,7 @@ public class AdminDashboardView {
         this.productoServices = new ProductoServices();
         this.inventarioServices = new InventarioServices();
         this.documentoServices = new DocumentoServices();
+        this.personaServices = new PersonaServices();
         build();
         cargarMetricas();
     }
@@ -69,7 +73,7 @@ public class AdminDashboardView {
         VBox.setVgrow(root, Priority.ALWAYS);
 
         // Encabezado
-        HBox header = new HBox();
+        VBox header = new VBox(4);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(0, 0, 10, 0));
         header.setStyle("-fx-border-color: #E0E0E0; -fx-border-width: 0 0 2 0;");
@@ -77,7 +81,12 @@ public class AdminDashboardView {
         Label lblTitulo = new Label("⚙  Panel de Administración");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 24));
         lblTitulo.setTextFill(Color.web("#0A1933"));
-        header.getChildren().add(lblTitulo);
+
+        Label lblSubtitulo = new Label("Bienvenido, " + adminCliente.getNombre() + " " + adminCliente.getApellido());
+        lblSubtitulo.setFont(Font.font("Arial", 14));
+        lblSubtitulo.setTextFill(Color.web("#4B5876"));
+
+        header.getChildren().addAll(lblTitulo, lblSubtitulo);
 
         // Pestañas
         TabPane tabs = new TabPane();
@@ -201,8 +210,12 @@ public class AdminDashboardView {
             lblTotalVentas.setText("—");
         }
 
-        // Clientes — aproximación via personaServices si está disponible
-        lblTotalClientes.setText("—");
+        try {
+            var clientes = personaServices.obtenerTodosLosClientes();
+            lblTotalClientes.setText(String.valueOf(clientes != null ? clientes.size() : 0));
+        } catch (Exception e) {
+            lblTotalClientes.setText("—");
+        }
     }
 
     private Canvas crearGraficoBarras() {
@@ -617,7 +630,6 @@ public class AdminDashboardView {
         card.getChildren().addAll(lbl, lblValor);
         return card;
     }
-
 
     private TableColumn<String[], String> columnaStr(String titulo, int idx) {
         TableColumn<String[], String> col = new TableColumn<>(titulo);
