@@ -13,37 +13,27 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-/**
- * Formulario modal para crear o editar un Empleado — TechZone (Admin).
- *
- * Uso:
- * 
- * <pre>
- * // Nuevo empleado
- * new GestionEmpleadosView(ownerStage, null, () -> refrescarTabla());
- *
- * // Editar empleado existente (row = String[] con datos actuales)
- * new GestionEmpleadosView(ownerStage, row, () -> refrescarTabla());
- * </pre>
- */
 public class GestionEmpleadosView {
 
     private final PersonaServices personaServices;
     private final Runnable onGuardado;
-    private final String[] datosActuales; // null = nuevo, non-null = editar
+    private final String[] datosActuales;
 
     private TextField txtNombres;
     private TextField txtApellidos;
     private TextField txtEmail;
     private TextField txtTelefono;
     private TextField txtDocumento;
+    private TextField txtSalario;
     private ComboBox<String> cbCargo;
     private PasswordField txtContrasena;
 
     private Label lblMensaje;
     private Stage stage;
 
-    // ── Constructor ───────────────────────────────────────────────────────────
+    // datosActuales: null = nuevo, non-null = editar
+    // Indices del array cuando se edita:
+    // [0]=id_persona, [1]=nombres, [2]=apellidos, [3]=email, [4]=cargo, [5]=estado
     public GestionEmpleadosView(Stage owner, String[] datosActuales, Runnable onGuardado) {
         this.personaServices = new PersonaServices();
         this.datosActuales = datosActuales;
@@ -51,7 +41,6 @@ public class GestionEmpleadosView {
         build(owner);
     }
 
-    // ── Construcción ─────────────────────────────────────────────────────────
     private void build(Stage owner) {
         stage = new Stage();
         stage.setTitle(datosActuales == null ? "Nuevo Empleado" : "Editar Empleado");
@@ -73,7 +62,6 @@ public class GestionEmpleadosView {
 
         int fila = 0;
 
-        // Título
         Label lblTitulo = new Label(datosActuales == null ? "NUEVO EMPLEADO" : "EDITAR EMPLEADO");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 20));
         lblTitulo.setTextFill(Color.web("#0A1933"));
@@ -85,14 +73,17 @@ public class GestionEmpleadosView {
         GridPane.setColumnSpan(sep, 2);
         grid.add(sep, 0, fila++);
 
-        // Campos
         txtNombres = campo("Nombres completos");
         txtApellidos = campo("Apellidos completos");
         txtEmail = campo("correo@techzone.co");
         txtTelefono = campo("Ej: 3001234567");
-        txtDocumento = campo("Cédula / DNI");
+        txtDocumento = campo("Cedula / DNI");
+        txtSalario = campo("Salario mensual (sin puntos)");
+
         txtContrasena = new PasswordField();
-        txtContrasena.setPromptText(datosActuales == null ? "Contraseña inicial" : "Dejar en blanco para no cambiar");
+        txtContrasena.setPromptText(datosActuales == null
+                ? "Contrasena inicial (min. 6 caracteres)"
+                : "Dejar en blanco para no cambiar");
         estilo(txtContrasena);
 
         cbCargo = new ComboBox<>();
@@ -104,10 +95,11 @@ public class GestionEmpleadosView {
                 { "Nombres *", txtNombres },
                 { "Apellidos *", txtApellidos },
                 { "Email *", txtEmail },
-                { "Teléfono", txtTelefono },
+                { "Telefono", txtTelefono },
                 { "Documento *", txtDocumento },
                 { "Cargo *", cbCargo },
-                { "Contraseña", txtContrasena },
+                { "Salario", txtSalario },
+                { "Contrasena", txtContrasena },
         };
 
         for (Object[] r : rows) {
@@ -115,26 +107,27 @@ public class GestionEmpleadosView {
             grid.add((Control) r[1], 1, fila++);
         }
 
-        // Pre-llenar si estamos editando
+        // Pre-llenar al editar
         if (datosActuales != null) {
             txtNombres.setText(safe(datosActuales, 1));
             txtApellidos.setText(safe(datosActuales, 2));
             txtEmail.setText(safe(datosActuales, 3));
+            txtEmail.setEditable(false);
+            txtEmail.setStyle(txtEmail.getStyle() + "-fx-background-color:#F0F0F0;");
             String cargo = safe(datosActuales, 4);
             if (cbCargo.getItems().contains(cargo))
                 cbCargo.getSelectionModel().select(cargo);
+            txtSalario.setText(safe(datosActuales, 6));
         }
 
-        // Mensaje
         lblMensaje = new Label("");
         lblMensaje.setFont(Font.font("Arial", 12));
         lblMensaje.setWrapText(true);
-        lblMensaje.setMaxWidth(350);
+        lblMensaje.setMaxWidth(370);
         GridPane.setColumnSpan(lblMensaje, 2);
         GridPane.setHalignment(lblMensaje, HPos.CENTER);
         grid.add(lblMensaje, 0, fila++);
 
-        // Botones
         Button btnGuardar = boton(datosActuales == null ? "CREAR" : "ACTUALIZAR", "#00C8FF");
         Button btnCancelar = boton("CANCELAR", "#646464");
         btnGuardar.setOnAction(e -> guardar());
@@ -145,14 +138,15 @@ public class GestionEmpleadosView {
         GridPane.setColumnSpan(btnBox, 2);
         grid.add(btnBox, 0, fila);
 
-        Scene scene = new Scene(grid, 480, 560);
+        Scene scene = new Scene(grid, 480, 600);
         stage.setScene(scene);
         stage.showAndWait();
     }
 
-    // ── Guardar ───────────────────────────────────────────────────────────────
     private void guardar() {
         limpiar();
+
+        // Validaciones de campos obligatorios
         if (txtNombres.getText().trim().isEmpty()) {
             error("Nombres es obligatorio.", txtNombres);
             return;
@@ -165,37 +159,87 @@ public class GestionEmpleadosView {
             error("Email es obligatorio.", txtEmail);
             return;
         }
+        if (!txtEmail.getText().contains("@")) {
+            error("El email no tiene un formato valido.", txtEmail);
+            return;
+        }
         if (txtDocumento.getText().trim().isEmpty()) {
             error("Documento es obligatorio.", txtDocumento);
             return;
         }
         if (datosActuales == null && txtContrasena.getText().length() < 6) {
-            error("La contraseña debe tener al menos 6 caracteres.", txtContrasena);
+            error("La contrasena debe tener al menos 6 caracteres.", txtContrasena);
             return;
         }
 
         try {
-            // TODO: conectar personaServices.crearEmpleado(...) / actualizarEmpleado(...)
-            // personaServices.crearEmpleado(
-            // txtNombres.getText().trim(), txtApellidos.getText().trim(),
-            // txtEmail.getText().trim(), txtTelefono.getText().trim(),
-            // txtDocumento.getText().trim(), cbCargo.getValue(),
-            // txtContrasena.getText());
+            if (datosActuales == null) {
+                // CREAR nuevo empleado
+                double salario = 0;
+                if (!txtSalario.getText().trim().isEmpty()) {
+                    try {
+                        salario = Double.parseDouble(txtSalario.getText().trim());
+                    } catch (NumberFormatException ex) {
+                        error("El salario debe ser un numero valido.", txtSalario);
+                        return;
+                    }
+                }
 
-            new Alert(Alert.AlertType.INFORMATION,
-                    "Empleado " + (datosActuales == null ? "creado" : "actualizado") + " correctamente.\n" +
-                            "(Conecta personaServices para persistencia en BD)",
-                    ButtonType.OK).showAndWait();
+                boolean ok = personaServices.crearEmpleado(
+                        txtNombres.getText().trim(),
+                        txtApellidos.getText().trim(),
+                        txtEmail.getText().trim(),
+                        txtTelefono.getText().trim(),
+                        txtDocumento.getText().trim(),
+                        cbCargo.getValue(),
+                        txtContrasena.getText(),
+                        salario);
 
-            if (onGuardado != null)
-                onGuardado.run();
-            stage.close();
+                if (ok) {
+                    if (onGuardado != null)
+                        onGuardado.run();
+                    stage.close();
+                } else {
+                    error("No se pudo crear el empleado. Verifique que el email y documento no esten registrados.",
+                            null);
+                }
+
+            } else {
+                // ACTUALIZAR empleado existente
+                int idPersona = Integer.parseInt(safe(datosActuales, 0));
+                double salario = 0;
+                if (!txtSalario.getText().trim().isEmpty()) {
+                    try {
+                        salario = Double.parseDouble(txtSalario.getText().trim());
+                    } catch (NumberFormatException ex) {
+                        error("El salario debe ser un numero valido.", txtSalario);
+                        return;
+                    }
+                }
+
+                boolean ok = personaServices.actualizarEmpleado(
+                        idPersona,
+                        txtNombres.getText().trim(),
+                        txtApellidos.getText().trim(),
+                        txtTelefono.getText().trim(),
+                        cbCargo.getValue(),
+                        salario,
+                        true);
+
+                if (ok) {
+                    if (onGuardado != null)
+                        onGuardado.run();
+                    stage.close();
+                } else {
+                    error("No se pudo actualizar el empleado.", null);
+                }
+            }
+
         } catch (Exception ex) {
-            error("Error al guardar: " + ex.getMessage(), null);
+            error("Error inesperado: " + ex.getMessage(), null);
         }
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
     private TextField campo(String prompt) {
         TextField tf = new TextField();
         estilo(tf);
@@ -217,14 +261,14 @@ public class GestionEmpleadosView {
         Button b = new Button(texto);
         b.setFont(Font.font("Arial", FontWeight.BOLD, 13));
         b.setTextFill(Color.WHITE);
-        b.setPrefSize(130, 38);
+        b.setPrefSize(140, 38);
         b.setStyle("-fx-background-color:" + color + ";-fx-border-width:0;-fx-cursor:hand;");
         return b;
     }
 
     private void error(String msg, Control foco) {
         lblMensaje.setTextFill(Color.web("#C83C3C"));
-        lblMensaje.setText("⚠ " + msg);
+        lblMensaje.setText("  " + msg);
         if (foco != null)
             foco.requestFocus();
     }

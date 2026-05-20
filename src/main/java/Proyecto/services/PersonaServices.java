@@ -14,11 +14,6 @@ public class PersonaServices {
         this.personaDAO = new PersonaDAO();
     }
 
-    // ── NUEVO: Buscar clientes por nombre o email ──────────────────────────────
-    /**
-     * Busca clientes cuyo nombre, apellido o email contengan el texto indicado.
-     * Usado en CotizacionView para localizar al cliente de la cotización.
-     */
     public List<Cliente> buscarClientes(String query) {
         if (query == null || query.trim().isEmpty()) {
             return personaDAO.obtenerTodosLosClientes();
@@ -26,7 +21,6 @@ public class PersonaServices {
         return personaDAO.buscarClientes(query.trim());
     }
 
-    // ── Registrar nuevo cliente ────────────────────────────────────────────────
     public boolean registrarCliente(String nombre, String apellido, String email,
             String telefono, String tipoDocumento,
             String password, String direccion) {
@@ -35,7 +29,8 @@ public class PersonaServices {
             System.out.println("Error: El email ya esta registrado");
             return false;
         }
-        if (!validarDatos(nombre, apellido, email, password)) return false;
+        if (!validarDatos(nombre, apellido, email, password))
+            return false;
 
         Cliente cliente = new Cliente();
         cliente.setNombre(nombre.trim());
@@ -48,28 +43,95 @@ public class PersonaServices {
         return personaDAO.crearCliente(cliente);
     }
 
-    // ── Autenticación unificada ────────────────────────────────────────────────
+    public boolean crearEmpleado(String nombre, String apellido, String email,
+            String telefono, String documento,
+            String cargo, String password, double salario) {
+        if (nombre == null || nombre.trim().isEmpty()) {
+            System.out.println("Error: nombre requerido");
+            return false;
+        }
+        if (apellido == null || apellido.trim().isEmpty()) {
+            System.out.println("Error: apellido requerido");
+            return false;
+        }
+        if (email == null || !email.contains("@")) {
+            System.out.println("Error: email invalido");
+            return false;
+        }
+        if (documento == null || documento.trim().isEmpty()) {
+            System.out.println("Error: documento requerido");
+            return false;
+        }
+        if (password == null || password.length() < 6) {
+            System.out.println("Error: contrasena minimo 6 caracteres");
+            return false;
+        }
+        if (personaDAO.emailExiste(email.toLowerCase().trim())) {
+            System.out.println("Error: El email ya esta registrado");
+            return false;
+        }
+
+        int idCargo = resolverIdCargo(cargo);
+        if (idCargo == -1) {
+            System.out.println("Error: cargo no reconocido: " + cargo);
+            return false;
+        }
+
+        String passwordHash = encriptarPassword(password);
+        if (passwordHash == null)
+            return false;
+
+        return personaDAO.crearEmpleado(
+                nombre, apellido,
+                email.toLowerCase().trim(),
+                telefono, documento,
+                idCargo, passwordHash, salario);
+    }
+
+    /**
+     * Actualiza los datos de un empleado existente.
+     */
+    public boolean actualizarEmpleado(int idPersona, String nombre, String apellido,
+            String telefono, String cargo,
+            double salario, boolean activo) {
+        int idCargo = resolverIdCargo(cargo);
+        if (idCargo == -1) {
+            System.out.println("Error: cargo no reconocido: " + cargo);
+            return false;
+        }
+        return personaDAO.actualizarEmpleado(idPersona, nombre, apellido, telefono, idCargo, salario, activo);
+    }
+
+    private int resolverIdCargo(String cargo) {
+        if (cargo == null)
+            return -1;
+        return switch (cargo.trim().toUpperCase()) {
+            case "ADMINISTRADOR" -> 1;
+            case "COMPRADOR" -> 2;
+            case "VENDEDOR" -> 3;
+            case "CAJERO" -> 4;
+            case "BODEGUERO" -> 5;
+            default -> -1;
+        };
+    }
+
     public Cliente autenticarCliente(String email, String password) {
         if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
-            System.out.println("Error: Email y contraseña son requeridos");
+            System.out.println("Error: Email y contrasena son requeridos");
             return null;
         }
 
         String emailLower = email.toLowerCase().trim();
-        String hash       = encriptarPassword(password);
+        String hash = encriptarPassword(password);
 
-        // 1. Intentar como CLIENTE
         Cliente cliente = personaDAO.obtenerClientePorEmail(emailLower);
         if (cliente != null && hash != null && hash.equals(cliente.getPasswordHash())) {
             cliente.setRol("CLIENTE");
-            System.out.println("Login exitoso como CLIENTE: " + emailLower);
             return cliente;
         }
 
-        // 2. Intentar como EMPLEADO
         Cliente empleado = personaDAO.obtenerEmpleadoPorEmail(emailLower);
         if (empleado != null && hash != null && hash.equals(empleado.getPasswordHash())) {
-            System.out.println("Login exitoso como EMPLEADO (" + empleado.getRol() + "): " + emailLower);
             return empleado;
         }
 
@@ -77,21 +139,21 @@ public class PersonaServices {
         return null;
     }
 
-    // ── Obtener cliente por ID ─────────────────────────────────────────────────
     public Cliente obtenerCliente(int idCliente) {
         return personaDAO.obtenerClientePorId(idCliente);
     }
 
-    // ── Obtener todos los clientes ─────────────────────────────────────────────
     public List<Cliente> obtenerTodosLosClientes() {
         return personaDAO.obtenerTodosLosClientes();
     }
 
-    // ── Actualizar cliente ────────────────────────────────────────────────────
     public boolean actualizarCliente(int idCliente, String nombre, String apellido,
             String telefono, String direccion) {
         Cliente cliente = personaDAO.obtenerClientePorId(idCliente);
-        if (cliente == null) { System.out.println("Error: Cliente no encontrado"); return false; }
+        if (cliente == null) {
+            System.out.println("Error: Cliente no encontrado");
+            return false;
+        }
         cliente.setNombre(nombre.trim());
         cliente.setApellido(apellido.trim());
         cliente.setTelefono(telefono);
@@ -99,41 +161,54 @@ public class PersonaServices {
         return personaDAO.actualizarCliente(cliente);
     }
 
-    // ── Cambiar contraseña ────────────────────────────────────────────────────
     public boolean cambiarPassword(int idCliente, String passwordActual, String passwordNueva) {
         Cliente cliente = personaDAO.obtenerClientePorId(idCliente);
-        if (cliente == null) { System.out.println("Error: Cliente no encontrado"); return false; }
+        if (cliente == null) {
+            System.out.println("Error: Cliente no encontrado");
+            return false;
+        }
         if (!verificarPassword(passwordActual, cliente.getPasswordHash())) {
-            System.out.println("Error: Contraseña actual incorrecta");
+            System.out.println("Error: Contrasena actual incorrecta");
             return false;
         }
         if (passwordNueva == null || passwordNueva.length() < 6) {
-            System.out.println("Error: La nueva contraseña debe tener al menos 6 caracteres");
+            System.out.println("Error: La nueva contrasena debe tener al menos 6 caracteres");
             return false;
         }
         return personaDAO.actualizarPassword(idCliente, encriptarPassword(passwordNueva));
     }
 
-    // ── Desactivar cliente ────────────────────────────────────────────────────
     public boolean desactivarCliente(int idCliente) {
         return personaDAO.eliminarCliente(idCliente);
     }
 
-    // ── Helpers privados ──────────────────────────────────────────────────────
     private boolean validarDatos(String nombre, String apellido, String email, String password) {
-        if (nombre == null || nombre.trim().isEmpty())     { System.out.println("Error: nombre requerido"); return false; }
-        if (apellido == null || apellido.trim().isEmpty()) { System.out.println("Error: apellido requerido"); return false; }
-        if (email == null || !email.contains("@"))         { System.out.println("Error: email invalido"); return false; }
-        if (password == null || password.length() < 6)    { System.out.println("Error: contraseña minimo 6 caracteres"); return false; }
+        if (nombre == null || nombre.trim().isEmpty()) {
+            System.out.println("Error: nombre requerido");
+            return false;
+        }
+        if (apellido == null || apellido.trim().isEmpty()) {
+            System.out.println("Error: apellido requerido");
+            return false;
+        }
+        if (email == null || !email.contains("@")) {
+            System.out.println("Error: email invalido");
+            return false;
+        }
+        if (password == null || password.length() < 6) {
+            System.out.println("Error: contrasena minimo 6 caracteres");
+            return false;
+        }
         return true;
     }
 
-    private String encriptarPassword(String password) {
+    public String encriptarPassword(String password) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] digest = md.digest(password.getBytes());
             StringBuilder sb = new StringBuilder();
-            for (byte b : digest) sb.append(String.format("%02x", b));
+            for (byte b : digest)
+                sb.append(String.format("%02x", b));
             return sb.toString();
         } catch (NoSuchAlgorithmException e) {
             System.err.println("Error al encriptar: " + e.getMessage());
