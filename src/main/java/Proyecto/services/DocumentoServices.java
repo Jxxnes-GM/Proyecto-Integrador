@@ -12,6 +12,7 @@ import Proyecto.Model.DetalleCompra;
 import Proyecto.Model.Venta;
 import Proyecto.Model.Cliente;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -30,49 +31,110 @@ public class DocumentoServices {
         this.itemCarritoDAO = new ItemCarritoDAO();
     }
 
+    // ── Crear documento de venta ───────────────────────────────────────────────
     public int crearDocumentoVenta(int idCliente, int idEmpleado,
                                    double descuento, String observaciones) {
-        Carrito carrito = carritoDAO.obtenerCarritoActivoDelCliente(idCliente);
-        if (carrito == null || carrito.estaVacio()) {
-            System.out.println("Error: Carrito vacio");
+        List<ItemCarrito> items = itemCarritoDAO.obtenerItemsDelCarrito(idCliente);
+
+        if (items == null || items.isEmpty()) {
+            System.out.println("Error: Carrito vacio para cliente id=" + idCliente);
             return -1;
         }
 
-        double total = carrito.getTotal() - descuento;
+        double subtotalTotal = 0;
+        for (ItemCarrito item : items) {
+            subtotalTotal += item.getSubtotal();
+        }
+        double total = subtotalTotal - descuento;
         if (total < 0) total = 0;
 
-        // idEmpleado = 0 → DocumentoDAO insertara NULL en la FK
         int idDocumento = documentoDAO.crearDocumento(
                 1, idCliente, idEmpleado, descuento, total, observaciones);
 
-        if (idDocumento != -1) {
-            List<ItemCarrito> items =
-                    itemCarritoDAO.obtenerItemsDelCarrito(carrito.getCliente().getId());
-            for (ItemCarrito item : items) {
-                inventarioDAO.registrarMovimiento(
-                        idDocumento,
-                        item.getProducto().getIdProducto(),
-                        idEmpleado,
-                        item.getCantidad(),
-                        item.getSubtotal());
-                inventarioDAO.actualizarStock(
-                        item.getProducto().getIdProducto(),
-                        -item.getCantidad());
-            }
-            itemCarritoDAO.limpiarCarrito(carrito.getCliente().getId());
-            System.out.println("Venta registrada. ID: " + idDocumento);
+        if (idDocumento == -1) {
+            System.out.println("Error: No se pudo crear el documento de venta");
+            return -1;
         }
+
+        for (ItemCarrito item : items) {
+            inventarioDAO.registrarMovimiento(
+                    idDocumento,
+                    item.getProducto().getIdProducto(),
+                    idEmpleado,
+                    item.getCantidad(),
+                    item.getSubtotal());
+            inventarioDAO.actualizarStock(
+                    item.getProducto().getIdProducto(),
+                    -item.getCantidad());
+        }
+
+        itemCarritoDAO.limpiarCarrito(idCliente);
+        System.out.println("Venta registrada exitosamente. ID: " + idDocumento);
         return idDocumento;
     }
 
-    /**
-     * Llamado por CarritoView al presionar "Finalizar Compra".
-     * Pasa 0 como idEmpleado para que DocumentoDAO envie NULL a la BD,
-     * evitando la violacion de FK cuando compra un cliente sin empleado asignado.
-     */
     public int registrarCompra(int idCliente) {
         return crearDocumentoVenta(idCliente, 0, 0, "Compra en linea");
     }
+
+    // ── Obtener todas las ventas CORREGIDO ────────────────────────────────────
+    /**
+     * CORRECCION PRINCIPAL:
+     * El metodo anterior llamaba a personaDAO.obtenerClientePorId() para cada
+     * documento. Si el id_persona del documento correspondia a un empleado o
+     * proveedor (no a un cliente), retornaba null y Venta.fromMap() fallaba,
+     * dejando la lista vacia.
+     *
+     * Solucion: construir un Cliente sintetico con los datos disponibles en el
+     * Map del documento cuando obtenerClientePorId() retorna null, evitando
+     * que un null rompa el stream y dejando la tabla en blanco.
+     */
+    public List<Venta> obtenerTodasLasVentas() {
+        PersonaDAO personaDAO = new PersonaDAO();
+        List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos();
+        List<Venta> ventas = new ArrayList<>();
+
+        for (Map<String, Object> doc : documentos) {
+            try {
+                int     idPersona = ((Number) doc.get("idPersona")).intValue();
+                Cliente cliente   = personaDAO.obtenerClientePorId(idPersona);
+
+                // Si no es un cliente registrado (p.ej. empleado que hizo la venta)
+                // se crea un objeto Cliente sintetico para que la fila se muestre igual
+                if (cliente == null) {
+                    cliente = new Cliente();
+                    cliente.setId(idPersona);
+                    cliente.setNombre("Persona");
+                    cliente.setApellido("ID-" + idPersona);
+                }
+
+                ventas.add(Venta.fromMap(doc, cliente));
+            } catch (Exception e) {
+                System.err.println("Error al mapear venta: " + e.getMessage());
+            }
+        }
+
+        return ventas;
+    }
+
+    // ── Filtrar por rango de fechas CORREGIDO ─────────────────────────────────
+    /**
+     * CORRECCION: el metodo anterior filtraba sobre obtenerTodasLasVentas()
+     * que ya fallaba. Ahora filtra sobre la lista corregida.
+     * Ademas se agrego validacion de null en getFecha() para evitar NPE.
+     */
+    public List<Venta> obtenerVentasPorRango(LocalDate fechaInicio, LocalDate fechaFin) {
+        if (fechaInicio == null || fechaFin == null) {
+            return obtenerTodasLasVentas();
+        }
+        return obtenerTodasLasVentas().stream()
+                .filter(v -> v.getFecha() != null
+                          && !v.getFecha().isBefore(fechaInicio)
+                          && !v.getFecha().isAfter(fechaFin))
+                .collect(Collectors.toList());
+    }
+
+    // ── Resto de metodos sin cambios ──────────────────────────────────────────
 
     public Map<String, Object> obtenerDocumento(int idDocumento) {
         return documentoDAO.obtenerDocumentoPorId(idDocumento);
@@ -100,10 +162,12 @@ public class DocumentoServices {
         if (documentos.isEmpty()) return "No hay compras registradas para este cliente";
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE COMPRAS DEL CLIENTE\n================================\n\n");
-        double total = 0; int count = 0;
+        double total = 0;
+        int count = 0;
         for (Map<String, Object> doc : documentos) {
             double t = (double) doc.get("total");
-            total += t; count++;
+            total += t;
+            count++;
             sb.append("Documento: ").append(doc.get("idDocumento")).append("\n")
               .append("  Fecha: ").append(doc.get("fecha")).append("\n")
               .append("  Total: $").append(String.format("%.2f", t)).append("\n\n");
@@ -117,7 +181,8 @@ public class DocumentoServices {
         List<Map<String, Object>> documentos = documentoDAO.obtenerTodosLosDocumentos();
         StringBuilder sb = new StringBuilder();
         sb.append("REPORTE DE VENTAS TOTALES\n==========================\n\n");
-        double totalVentas = 0, totalDesc = 0; int cantidad = 0;
+        double totalVentas = 0, totalDesc = 0;
+        int cantidad = 0;
         for (Map<String, Object> doc : documentos) {
             totalVentas += (double) doc.get("total");
             totalDesc   += (double) doc.get("descuento");
@@ -157,22 +222,7 @@ public class DocumentoServices {
                 .map(DetalleCompra::fromMap).collect(Collectors.toList());
     }
 
-    public List<Venta> obtenerTodasLasVentas() {
-        PersonaDAO personaDAO = new PersonaDAO();
-        return obtenerTodosLosDocumentos().stream()
-                .map(doc -> {
-                    int     idCli   = ((Number) doc.get("idPersona")).intValue();
-                    Cliente cliente = personaDAO.obtenerClientePorId(idCli);
-                    return Venta.fromMap(doc, cliente);
-                }).collect(Collectors.toList());
+    public String generarReporteVentas() {
+        return generarReporteVentasTotales();
     }
-
-    public List<Venta> obtenerVentasPorRango(LocalDate fechaInicio, LocalDate fechaFin) {
-        return obtenerTodasLasVentas().stream()
-                .filter(v -> !v.getFecha().isBefore(fechaInicio)
-                          && !v.getFecha().isAfter(fechaFin))
-                .collect(Collectors.toList());
-    }
-
-    public String generarReporteVentas() { return generarReporteVentasTotales(); }
 }
