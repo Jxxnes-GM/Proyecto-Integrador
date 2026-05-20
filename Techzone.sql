@@ -633,23 +633,6 @@ LEFT JOIN cargo    c ON e.id_cargo   = c.id_cargo
 ORDER BY p.tipo, c.id_cargo;
 
 
--- Ver la definicion exacta de la FK de documento
-SELECT 
-    CONSTRAINT_NAME,
-    COLUMN_NAME,
-    REFERENCED_TABLE_NAME,
-    REFERENCED_COLUMN_NAME
-FROM information_schema.KEY_COLUMN_USAGE
-WHERE TABLE_SCHEMA = 'techzone'
-  AND TABLE_NAME   = 'documento'
-  AND COLUMN_NAME  = 'id_empleado';
-
--- Ver si la columna ya acepta NULL
-SELECT COLUMN_NAME, IS_NULLABLE, COLUMN_DEFAULT
-FROM information_schema.COLUMNS
-WHERE TABLE_SCHEMA = 'techzone'
-  AND TABLE_NAME   = 'documento'
-  AND COLUMN_NAME  = 'id_empleado';
 
 
 
