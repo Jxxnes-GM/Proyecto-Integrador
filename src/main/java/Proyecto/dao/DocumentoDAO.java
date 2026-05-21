@@ -7,25 +7,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * DAO para operaciones sobre la tabla documento.
- */
 public class DocumentoDAO {
 
-    /**
-     * Crea un documento en la BD.
-     * Si idEmpleado <= 0 se inserta NULL (compra online sin cajero asignado).
-     */
     public int crearDocumento(int idTipoDocumento, int idPersona, int idEmpleado,
             double descuento, double total, String observaciones) {
 
         String sql = "INSERT INTO documento " +
-                "(id_tipo_documento, id_persona, id_empleado, descuento, total, observaciones, fecha_documento, estado) "
-                +
-                "VALUES (?, ?, ?, ?, ?, ?, NOW(), 'COMPLETADA')";
+                "(id_tipo_documento, id_persona, id_empleado, descuento, subtotal, total, " +
+                " observaciones, fecha_documento, estado) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'COMPLETADA')";
 
         try (Connection conexion = conexionBD.obtenerConexion();
-                PreparedStatement pstmt = conexion.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                PreparedStatement pstmt = conexion.prepareStatement(
+                        sql, Statement.RETURN_GENERATED_KEYS)) {
 
             pstmt.setInt(1, idTipoDocumento);
             pstmt.setInt(2, idPersona);
@@ -37,13 +31,25 @@ public class DocumentoDAO {
             }
 
             pstmt.setDouble(4, descuento);
-            pstmt.setDouble(5, total);
-            pstmt.setString(6, observaciones);
+            // subtotal = total antes de IVA; se guarda igual al total si no hay
+            // separacion de IVA en la tabla (la columna subtotal existe en el schema)
+            pstmt.setDouble(5, total - descuento);
+            pstmt.setDouble(6, total);
+            pstmt.setString(7, observaciones);
 
-            pstmt.executeUpdate();
-            ResultSet rs = pstmt.getGeneratedKeys();
-            if (rs.next())
-                return rs.getInt(1);
+            int filasAfectadas = pstmt.executeUpdate();
+            if (filasAfectadas == 0) {
+                System.err.println("DocumentoDAO.crearDocumento: INSERT no afecto ninguna fila.");
+                return -1;
+            }
+
+            // CORRECCION PRINCIPAL: usar getLong para evitar Conversion='1' en Connector/J
+            // 9.x
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return (int) rs.getLong(1);
+                }
+            }
 
         } catch (SQLException e) {
             System.err.println("DocumentoDAO.crearDocumento: " + e.getMessage());
@@ -145,7 +151,8 @@ public class DocumentoDAO {
         return resultado;
     }
 
-    public boolean actualizarDocumento(int idDocumento, double descuento, double total, String observaciones) {
+    public boolean actualizarDocumento(int idDocumento, double descuento,
+            double total, String observaciones) {
         String sql = "UPDATE documento SET descuento=?, total=?, observaciones=? WHERE id_documento=?";
         try (Connection conexion = conexionBD.obtenerConexion();
                 PreparedStatement pstmt = conexion.prepareStatement(sql)) {
@@ -170,7 +177,6 @@ public class DocumentoDAO {
         doc.put("total", rs.getDouble("total"));
         doc.put("observaciones", rs.getString("observaciones"));
         doc.put("fecha", rs.getTimestamp("fecha_documento"));
-        // CORRECCION: mapear el campo estado real de la BD
         doc.put("estado", rs.getString("estado"));
         return doc;
     }
