@@ -11,11 +11,14 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.stage.Modality;
+import javafx.stage.Stage;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +34,7 @@ public class MovimientosView {
     private static final String COLOR_AZUL = "#0A1933";
     private static final String COLOR_CYAN = "#00C8FF";
     private static final String COLOR_ROJO = "#C83C3C";
+    private static final String COLOR_VERDE = null;
 
     private final InventarioServices inventarioServices;
     private final ProductoServices productoServices;
@@ -508,120 +512,406 @@ public class MovimientosView {
     }
 
     // =========================================================================
-    // DIALOGO: REGISTRAR COMPRA A PROVEEDOR
+    // DIALOGO: REGISTRAR COMPRA A PROVEEDOR (formulario estructurado)
     // =========================================================================
 
+    private static class FilaProductoCompra {
+        final TextField txtId = new TextField();
+        final TextField txtCantidad = new TextField();
+        final TextField txtPrecio = new TextField();
+
+        FilaProductoCompra() {
+            txtId.setPromptText("ID producto");
+            txtCantidad.setPromptText("Cantidad");
+            txtPrecio.setPromptText("Precio unitario");
+            txtId.setPrefWidth(100);
+            txtCantidad.setPrefWidth(90);
+            txtPrecio.setPrefWidth(120);
+            String estiloBase = "-fx-border-color:#C0C0C0;-fx-border-width:1;-fx-padding:6;";
+            txtId.setStyle(estiloBase);
+            txtCantidad.setStyle(estiloBase);
+            txtPrecio.setStyle(estiloBase);
+        }
+
+        /** Retorna true si todos los campos tienen contenido no vacio. */
+        boolean tieneContenido() {
+            return !txtId.getText().trim().isEmpty()
+                    && !txtCantidad.getText().trim().isEmpty()
+                    && !txtPrecio.getText().trim().isEmpty();
+        }
+
+        /** Valida y parsea. Lanza IllegalArgumentException con mensaje descriptivo. */
+        int getId() {
+            try {
+                int v = Integer.parseInt(txtId.getText().trim());
+                if (v <= 0)
+                    throw new NumberFormatException();
+                return v;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("El ID de producto debe ser un numero entero positivo.");
+            }
+        }
+
+        int getCantidad() {
+            try {
+                int v = Integer.parseInt(txtCantidad.getText().trim());
+                if (v <= 0)
+                    throw new NumberFormatException();
+                return v;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("La cantidad debe ser un numero entero positivo.");
+            }
+        }
+
+        double getPrecio() {
+            try {
+                // Aceptar tanto punto como coma como separador decimal
+                String raw = txtPrecio.getText().trim().replace(",", ".");
+                double v = Double.parseDouble(raw);
+                if (v <= 0)
+                    throw new NumberFormatException();
+                return v;
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("El precio debe ser un numero mayor a 0.");
+            }
+        }
+    }
+
     private void abrirDialogoCompra() {
-        Dialog<Void> dlg = new Dialog<>();
-        dlg.setTitle("Registrar Compra a Proveedor");
-        dlg.setResizable(true);
+        Stage ventana = new Stage();
+        ventana.setTitle("Registrar Compra a Proveedor");
+        ventana.setResizable(true);
 
-        VBox content = new VBox(12);
-        content.setPadding(new Insets(20));
-        content.setPrefWidth(500);
+        // -- Encabezado -------------------------------------------------------
+        Label lblTitulo = new Label("Registrar Compra a Proveedor");
+        lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        lblTitulo.setTextFill(Color.web(COLOR_AZUL));
 
-        TextField txtIdProveedor = campo("ID del Proveedor");
-        TextField txtIdEmpleado = campo("ID del Empleado");
-        TextField txtNroFactura = campo("Numero de factura del proveedor (ej: FAC-001)");
+        // -- Datos de la compra -----------------------------------------------
+        GridPane gridCabecera = new GridPane();
+        gridCabecera.setHgap(14);
+        gridCabecera.setVgap(10);
+        gridCabecera.setPadding(new Insets(0, 0, 10, 0));
 
-        Label lblProductos = etiqueta("Productos (uno por linea: ID,cantidad,precio):");
-        TextArea txtProductos = new TextArea();
-        txtProductos.setPromptText("Ejemplo:\n1,10,2200000\n4,5,85000");
-        txtProductos.setPrefRowCount(5);
-        txtProductos.setWrapText(true);
+        ColumnConstraints colLabel = new ColumnConstraints(140);
+        ColumnConstraints colField = new ColumnConstraints();
+        colField.setHgrow(Priority.ALWAYS);
+        gridCabecera.getColumnConstraints().addAll(colLabel, colField);
 
-        Label lblAyuda = new Label(
-                "Formato: ID_PRODUCTO,CANTIDAD,PRECIO_UNITARIO_COMPRA\n" +
-                        "Un producto por linea. Se sumara al stock de cada producto.");
-        lblAyuda.setFont(Font.font("Arial", 11));
-        lblAyuda.setTextFill(Color.GRAY);
-        lblAyuda.setWrapText(true);
+        TextField txtIdProveedor = campoFormulario("Ej: 10");
+        TextField txtIdEmpleado = campoFormulario("Ej: 5");
+        TextField txtNroFactura = campoFormulario("Ej: FAC-SAM-2025-001");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(10);
-        grid.add(etiqueta("ID Proveedor:"), 0, 0);
-        grid.add(txtIdProveedor, 1, 0);
-        grid.add(etiqueta("ID Empleado:"), 0, 1);
-        grid.add(txtIdEmpleado, 1, 1);
-        grid.add(etiqueta("Nro. Factura:"), 0, 2);
-        grid.add(txtNroFactura, 1, 2);
+        gridCabecera.add(etiquetaForm("ID Proveedor:"), 0, 0);
+        gridCabecera.add(txtIdProveedor, 1, 0);
+        gridCabecera.add(etiquetaForm("ID Empleado:"), 0, 1);
+        gridCabecera.add(txtIdEmpleado, 1, 1);
+        gridCabecera.add(etiquetaForm("Nro. Factura:"), 0, 2);
+        gridCabecera.add(txtNroFactura, 1, 2);
 
-        content.getChildren().addAll(grid, lblProductos, txtProductos, lblAyuda);
+        // -- Tabla de productos (filas dinamicas) ----------------------------
+        Label lblProductos = new Label("Productos de la compra:");
+        lblProductos.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        lblProductos.setTextFill(Color.web(COLOR_AZUL));
 
-        ButtonType btnGuardar = new ButtonType("Registrar Compra", ButtonBar.ButtonData.OK_DONE);
-        dlg.getDialogPane().getButtonTypes().addAll(btnGuardar, ButtonType.CANCEL);
-        dlg.getDialogPane().setContent(content);
+        // Cabecera de columnas
+        HBox cabeceraColumnas = new HBox(8);
+        cabeceraColumnas.setPadding(new Insets(4, 0, 2, 0));
+        Label hId = cabCol("ID Producto", 100);
+        Label hCant = cabCol("Cantidad", 90);
+        Label hPrecio = cabCol("Precio unitario", 120);
+        Label hAccion = cabCol("", 40);
+        cabeceraColumnas.getChildren().addAll(hId, hCant, hPrecio, hAccion);
 
-        dlg.setResultConverter(bt -> {
-            if (bt == btnGuardar) {
-                try {
-                    int idProveedor = Integer.parseInt(txtIdProveedor.getText().trim());
-                    int idEmpleado = Integer.parseInt(txtIdEmpleado.getText().trim());
-                    String nroFact = txtNroFactura.getText().trim();
-                    String lineas = txtProductos.getText().trim();
+        // Contenedor de filas de producto
+        VBox contenedorFilas = new VBox(6);
 
-                    if (nroFact.isEmpty() || lineas.isEmpty())
-                        throw new IllegalArgumentException("campos vacios");
+        // Fila de resumen total
+        Label lblTotal = new Label("Total: $0");
+        lblTotal.setFont(Font.font("Arial", FontWeight.BOLD, 14));
+        lblTotal.setTextFill(Color.web(COLOR_AZUL));
 
-                    // Construir JSON para el SP
-                    StringBuilder json = new StringBuilder("[");
-                    String[] filas = lineas.split("\n");
-                    for (int i = 0; i < filas.length; i++) {
-                        String[] partes = filas[i].trim().split(",");
-                        if (partes.length != 3)
-                            throw new IllegalArgumentException("formato incorrecto en linea " + (i + 1));
-                        int id = Integer.parseInt(partes[0].trim());
-                        int qty = Integer.parseInt(partes[1].trim());
-                        double precio = Double.parseDouble(partes[2].trim());
-                        if (i > 0)
-                            json.append(",");
-                        json.append(String.format("{\"id\":%d,\"qty\":%d,\"precio\":%.0f}", id, qty, precio));
+        // Lista viva de filas
+        List<FilaProductoCompra> listaFilas = new java.util.ArrayList<>();
+
+        // Funcion de actualizacion del total (lambda-compatible via Runnable)
+        Runnable actualizarTotal = () -> {
+            double total = 0;
+            for (FilaProductoCompra fila : listaFilas) {
+                if (fila.tieneContenido()) {
+                    try {
+                        total += fila.getCantidad() * fila.getPrecio();
+                    } catch (IllegalArgumentException ignored) {
                     }
-                    json.append("]");
-
-                    Map<String, Object> resultado = inventarioServices.registrarCompra(
-                            idProveedor, idEmpleado, nroFact, json.toString());
-
-                    int idDoc = ((Number) resultado.getOrDefault("idDocumento", -1)).intValue();
-                    String msg = (String) resultado.getOrDefault("mensaje", "Error");
-
-                    if (idDoc > 0) {
-                        // Mostrar ticket de compra con el mismo formato del POS
-                        generarTicketCompra(idDoc, idProveedor, nroFact, filas, idEmpleado);
-                        cargarDatos();
-                    } else {
-                        mostrarError("No se pudo registrar la compra:\n" + msg);
-                    }
-
-                } catch (NumberFormatException e) {
-                    mostrarError("Verifica que los IDs y cantidades sean numeros enteros y los precios sean validos.");
-                } catch (IllegalArgumentException e) {
-                    mostrarError("Error de formato: " + e.getMessage() +
-                            "\nFormato correcto por linea: ID_PRODUCTO,CANTIDAD,PRECIO");
-                } catch (Exception e) {
-                    mostrarError("Error inesperado: " + e.getMessage());
                 }
             }
-            return null;
+            lblTotal.setText(String.format("Total estimado: $%,.0f", total));
+        };
+
+        // Agregar primera fila por defecto
+        agregarFilaProducto(listaFilas, contenedorFilas, actualizarTotal);
+
+        Button btnAgregarFila = new Button("+ Agregar otro producto");
+        btnAgregarFila.setFont(Font.font("Arial", 12));
+        btnAgregarFila.setStyle(
+                "-fx-background-color: transparent;" +
+                        "-fx-text-fill: " + COLOR_CYAN + ";" +
+                        "-fx-cursor: hand;" +
+                        "-fx-border-color: " + COLOR_CYAN + ";" +
+                        "-fx-border-width: 1;" +
+                        "-fx-padding: 5 10 5 10;");
+        btnAgregarFila.setOnAction(e -> agregarFilaProducto(listaFilas, contenedorFilas, actualizarTotal));
+
+        // -- Mensaje de error interno -----------------------------------------
+        Label lblMensaje = new Label("");
+        lblMensaje.setFont(Font.font("Arial", 12));
+        lblMensaje.setWrapText(true);
+        lblMensaje.setMaxWidth(500);
+
+        // -- Botones ----------------------------------------------------------
+        Button btnRegistrar = new Button("Registrar Compra");
+        btnRegistrar.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        btnRegistrar.setTextFill(Color.WHITE);
+        btnRegistrar.setStyle(
+                "-fx-background-color: " + COLOR_VERDE + ";" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 9 20 9 20;");
+
+        Button btnCancelar = new Button("Cancelar");
+        btnCancelar.setFont(Font.font("Arial", FontWeight.BOLD, 13));
+        btnCancelar.setTextFill(Color.WHITE);
+        btnCancelar.setStyle(
+                "-fx-background-color: #646464;" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 9 20 9 20;");
+
+        btnCancelar.setOnAction(e -> ventana.close());
+
+        btnRegistrar.setOnAction(e -> {
+            lblMensaje.setText("");
+
+            // Validar cabecera
+            String errCabecera = validarCabecera(txtIdProveedor, txtIdEmpleado, txtNroFactura);
+            if (errCabecera != null) {
+                lblMensaje.setTextFill(Color.web(COLOR_ROJO));
+                lblMensaje.setText(errCabecera);
+                return;
+            }
+
+            // Recopilar filas con contenido
+            List<FilaProductoCompra> filasConDatos = new java.util.ArrayList<>();
+            for (FilaProductoCompra fila : listaFilas) {
+                if (fila.tieneContenido())
+                    filasConDatos.add(fila);
+            }
+
+            if (filasConDatos.isEmpty()) {
+                lblMensaje.setTextFill(Color.web(COLOR_ROJO));
+                lblMensaje.setText("Debes agregar al menos un producto.");
+                return;
+            }
+
+            // Validar y construir JSON
+            try {
+                int idProveedor = Integer.parseInt(txtIdProveedor.getText().trim());
+                int idEmpleado = Integer.parseInt(txtIdEmpleado.getText().trim());
+                String nroFact = txtNroFactura.getText().trim();
+
+                StringBuilder json = new StringBuilder("[");
+                List<int[]> datosParaTicket = new java.util.ArrayList<>();
+                List<double[]> preciosParaTicket = new java.util.ArrayList<>();
+
+                for (int i = 0; i < filasConDatos.size(); i++) {
+                    FilaProductoCompra fila = filasConDatos.get(i);
+                    int id = fila.getId();
+                    int qty = fila.getCantidad();
+                    double precio = fila.getPrecio();
+
+                    if (i > 0)
+                        json.append(",");
+                    json.append(String.format("{\"id\":%d,\"qty\":%d,\"precio\":%.0f}", id, qty, precio));
+                    datosParaTicket.add(new int[] { id, qty });
+                    preciosParaTicket.add(new double[] { precio });
+                }
+                json.append("]");
+
+                Map<String, Object> resultado = inventarioServices.registrarCompra(
+                        idProveedor, idEmpleado, nroFact, json.toString());
+
+                int idDoc = ((Number) resultado.getOrDefault("idDocumento", -1)).intValue();
+                String msg = (String) resultado.getOrDefault("mensaje", "Error desconocido");
+
+                if (idDoc > 0) {
+                    ventana.close();
+                    generarTicketCompraEstructurado(
+                            idDoc, idProveedor, nroFact, filasConDatos, idEmpleado);
+                    cargarDatos();
+                } else {
+                    lblMensaje.setTextFill(Color.web(COLOR_ROJO));
+                    lblMensaje.setText("No se pudo registrar la compra: " + msg);
+                }
+
+            } catch (IllegalArgumentException ex) {
+                lblMensaje.setTextFill(Color.web(COLOR_ROJO));
+                lblMensaje.setText(ex.getMessage());
+            } catch (Exception ex) {
+                lblMensaje.setTextFill(Color.web(COLOR_ROJO));
+                lblMensaje.setText("Error inesperado: " + ex.getMessage());
+            }
         });
 
-        dlg.showAndWait();
+        HBox filaBotones = new HBox(12, btnRegistrar, btnCancelar);
+        filaBotones.setAlignment(Pos.CENTER_RIGHT);
+        filaBotones.setPadding(new Insets(10, 0, 0, 0));
+
+        // -- Ensamble del layout ----------------------------------------------
+        ScrollPane scrollFilas = new ScrollPane(contenedorFilas);
+        scrollFilas.setFitToWidth(true);
+        scrollFilas.setPrefHeight(220);
+        scrollFilas.setStyle("-fx-background: white; -fx-background-color: white;");
+
+        VBox layout = new VBox(14,
+                lblTitulo,
+                new Separator(),
+                gridCabecera,
+                new Separator(),
+                lblProductos,
+                cabeceraColumnas,
+                scrollFilas,
+                btnAgregarFila,
+                lblTotal,
+                new Separator(),
+                lblMensaje,
+                filaBotones);
+        layout.setPadding(new Insets(24));
+        layout.setPrefWidth(560);
+
+        Scene escena = new Scene(layout);
+        ventana.setScene(escena);
+        ventana.initModality(Modality.APPLICATION_MODAL);
+        ventana.showAndWait();
+    }
+
+    /**
+     * Agrega una nueva fila de campos (ID, Cantidad, Precio) al contenedor visual
+     * y a la lista interna. El boton de eliminar solo aparece cuando hay mas de una
+     * fila.
+     */
+    private void agregarFilaProducto(List<FilaProductoCompra> lista,
+            VBox contenedor,
+            Runnable actualizarTotal) {
+        FilaProductoCompra nuevaFila = new FilaProductoCompra();
+        lista.add(nuevaFila);
+
+        // Listener para actualizar total en tiempo real
+        nuevaFila.txtCantidad.textProperty().addListener((obs, o, n) -> actualizarTotal.run());
+        nuevaFila.txtPrecio.textProperty().addListener((obs, o, n) -> actualizarTotal.run());
+
+        Button btnElim = new Button("X");
+        btnElim.setStyle(
+                "-fx-background-color: " + COLOR_ROJO + ";" +
+                        "-fx-text-fill: white;" +
+                        "-fx-border-width: 0;" +
+                        "-fx-cursor: hand;" +
+                        "-fx-padding: 5 8 5 8;");
+        btnElim.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+
+        HBox fila = new HBox(8,
+                nuevaFila.txtId,
+                nuevaFila.txtCantidad,
+                nuevaFila.txtPrecio,
+                btnElim);
+        fila.setAlignment(Pos.CENTER_LEFT);
+
+        btnElim.setOnAction(e -> {
+            if (lista.size() <= 1)
+                return; // Siempre mantener al menos una fila
+            lista.remove(nuevaFila);
+            contenedor.getChildren().remove(fila);
+            actualizarTotal.run();
+        });
+
+        contenedor.getChildren().add(fila);
+        actualizarTotal.run();
+    }
+
+    /**
+     * Valida los campos de cabecera de la compra. Retorna null si todo es valido.
+     */
+    private String validarCabecera(TextField txtIdProveedor,
+            TextField txtIdEmpleado,
+            TextField txtNroFactura) {
+        if (txtIdProveedor.getText().trim().isEmpty())
+            return "El ID del proveedor es obligatorio.";
+        try {
+            int id = Integer.parseInt(txtIdProveedor.getText().trim());
+            if (id <= 0)
+                return "El ID del proveedor debe ser un numero positivo.";
+        } catch (NumberFormatException e) {
+            return "El ID del proveedor debe ser un numero entero.";
+        }
+
+        if (txtIdEmpleado.getText().trim().isEmpty())
+            return "El ID del empleado es obligatorio.";
+        try {
+            int id = Integer.parseInt(txtIdEmpleado.getText().trim());
+            if (id <= 0)
+                return "El ID del empleado debe ser un numero positivo.";
+        } catch (NumberFormatException e) {
+            return "El ID del empleado debe ser un numero entero.";
+        }
+
+        if (txtNroFactura.getText().trim().isEmpty())
+            return "El numero de factura del proveedor es obligatorio.";
+
+        return null;
+    }
+
+    private TextField campoFormulario(String prompt) {
+        TextField tf = new TextField();
+        tf.setPromptText(prompt);
+        tf.setStyle("-fx-border-color:#C0C0C0;-fx-border-width:1;-fx-padding:7;");
+        tf.setMaxWidth(Double.MAX_VALUE);
+        return tf;
+    }
+
+    private Label etiquetaForm(String texto) {
+        Label l = new Label(texto);
+        l.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        l.setTextFill(Color.web("#333333"));
+        return l;
+    }
+
+    private Label cabCol(String texto, double ancho) {
+        Label l = new Label(texto);
+        l.setPrefWidth(ancho);
+        l.setFont(Font.font("Arial", FontWeight.BOLD, 11));
+        l.setTextFill(Color.web("#555555"));
+        l.setStyle("-fx-border-color: transparent transparent #CCCCCC transparent; -fx-border-width: 0 0 1 0;");
+        return l;
     }
 
     // =========================================================================
     // REPORTE DE COMPRAS - FORMATO TICKET (igual al POS de ventas)
     // =========================================================================
 
-    private void generarTicketCompra(int idDocumento, int idProveedor, String nroFactExt,
-            String[] lineasProductos, int idEmpleado) {
+    /**
+     * Genera y muestra el ticket de compra a partir de la lista estructurada de
+     * productos.
+     * Mismo formato visual que el ticket del POS de ventas.
+     */
+    private void generarTicketCompraEstructurado(int idDocumento, int idProveedor,
+            String nroFactExt,
+            List<FilaProductoCompra> productos,
+            int idEmpleado) {
         StringBuilder sb = new StringBuilder();
         sb.append("===========================================\n");
         sb.append("       TECHZONE  -  FACTURA DE COMPRA\n");
         sb.append("===========================================\n");
         sb.append(String.format("  N Documento   : %d%n", idDocumento));
-        sb.append(String.format("  Fecha         : %s%n",
-                LocalDateTime.now().format(FMT_FECHA)));
+        sb.append(String.format("  Fecha         : %s%n", LocalDateTime.now().format(FMT_FECHA)));
         sb.append(String.format("  Nro Fact. Ext.: %s%n", nroFactExt));
         sb.append(String.format("  ID Proveedor  : %d%n", idProveedor));
         sb.append(String.format("  ID Empleado   : %d%n", idEmpleado));
@@ -631,18 +921,15 @@ public class MovimientosView {
         sb.append("-------------------------------------------\n");
 
         double totalCompra = 0;
-        for (String linea : lineasProductos) {
-            String[] partes = linea.trim().split(",");
-            if (partes.length != 3)
-                continue;
+
+        for (FilaProductoCompra fila : productos) {
             try {
-                int id = Integer.parseInt(partes[0].trim());
-                int qty = Integer.parseInt(partes[1].trim());
-                double precio = Double.parseDouble(partes[2].trim());
+                int id = fila.getId();
+                int qty = fila.getCantidad();
+                double precio = fila.getPrecio();
                 double sub = qty * precio;
                 totalCompra += sub;
 
-                // Intentar obtener nombre del producto
                 String nombreProd = "-";
                 try {
                     var prod = productoServices.obtenerProducto(id);
@@ -654,10 +941,10 @@ public class MovimientosView {
                 sb.append(String.format("  %-6d %-25s %6d %12,.0f%n",
                         id, truncar(nombreProd, 25), qty, sub));
                 sb.append(String.format("         Precio unitario compra: $%,.0f%n", precio));
-                sb.append(String.format("         Fecha ingreso: %s%n",
+                sb.append(String.format("         Fecha ingreso         : %s%n",
                         LocalDate.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
                 sb.append("\n");
-            } catch (NumberFormatException ignored) {
+            } catch (IllegalArgumentException ignored) {
             }
         }
 

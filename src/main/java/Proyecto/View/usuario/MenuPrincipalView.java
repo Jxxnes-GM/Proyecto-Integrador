@@ -117,12 +117,10 @@ public class MenuPrincipalView {
                 ? cliente.getNombre() + " " + cliente.getApellido()
                 : "Invitado";
 
-        String colorBadge = colorDelRol(rol);
-
         Label lblRolBadge = new Label(rol);
         lblRolBadge.setFont(Font.font("Arial", FontWeight.BOLD, 10));
         lblRolBadge.setTextFill(Color.web("#0A1933"));
-        lblRolBadge.setStyle("-fx-background-color: " + colorBadge + "; -fx-padding: 2 6 2 6;");
+        lblRolBadge.setStyle("-fx-background-color: " + colorDelRol(rol) + "; -fx-padding: 2 6 2 6;");
 
         Label lblUser = new Label("  " + nombreUsuario);
         lblUser.setTextFill(Color.WHITE);
@@ -130,9 +128,9 @@ public class MenuPrincipalView {
 
         Button btnLogout = new Button("Cerrar sesion");
         btnLogout.setStyle(
-                "-fx-background-color: #C83C3C; -fx-text-fill: white;" +
-                        "-fx-font-weight: bold; -fx-border-width: 0;" +
-                        "-fx-cursor: hand; -fx-padding: 6 14 6 14;");
+                "-fx-background-color: #C83C3C; -fx-text-fill: white;"
+                        + "-fx-font-weight: bold; -fx-border-width: 0;"
+                        + "-fx-cursor: hand; -fx-padding: 6 14 6 14;");
         btnLogout.setOnAction(e -> cerrarSesion());
 
         HBox userBox = new HBox(10, lblRolBadge, lblUser, btnLogout);
@@ -142,8 +140,8 @@ public class MenuPrincipalView {
         return topBar;
     }
 
-    private String colorDelRol(String rol) {
-        return switch (rol) {
+    private String colorDelRol(String r) {
+        return switch (r) {
             case "ADMINISTRADOR" -> "#FF9800";
             case "VENDEDOR" -> "#4CAF50";
             case "CAJERO" -> "#9C27B0";
@@ -153,13 +151,30 @@ public class MenuPrincipalView {
         };
     }
 
-    // ── Menu lateral ───────────────────────────────────────────────────────────
+    // ── Menu lateral CORREGIDO ─────────────────────────────────────────────────
+    /**
+     * CORRECCION DE ROLES:
+     *
+     * Seccion PRINCIPAL: todos los empleados y clientes ven el Catalogo.
+     * Solo empleados y admin ven Dashboard.
+     *
+     * Seccion VENTAS:
+     * - "Cotizaciones" -> Vendedor y Admin unicamente.
+     * - "Punto de Venta" -> Cajero y Admin unicamente.
+     * - "Registro Ventas" -> Cajero y Admin unicamente.
+     *
+     * Seccion MI CUENTA: clientes.
+     * Seccion INVENTARIO: bodeguero y admin.
+     * Seccion CATALOGO (Nuevo Producto): comprador y admin.
+     * Seccion ADMINISTRACION: admin.
+     */
     private VBox crearMenuLateral() {
         VBox menuPanel = new VBox(4);
         menuPanel.setPrefWidth(240);
         menuPanel.setPadding(new Insets(18, 10, 18, 10));
         menuPanel.setStyle("-fx-background-color: #1E2840;");
 
+        // PRINCIPAL
         if (esEmpleadoOAdmin()) {
             agregarSeccion(menuPanel, "PRINCIPAL",
                     List.of("Dashboard", "Catalogo"),
@@ -170,31 +185,47 @@ public class MenuPrincipalView {
                     List.of("productos"));
         }
 
+        // MI CUENTA (solo clientes)
         if (esCliente()) {
             agregarSeccion(menuPanel, "MI CUENTA",
                     List.of("Mi Carrito", "Mis Compras", "Mi Perfil"),
                     List.of("carrito", "compras", "perfil"));
         }
 
-        if (esVendedorOAdmin()) {
+        // VENTAS - Cotizaciones: solo Vendedor y Admin
+        if (esSoloVendedor()) {
             agregarSeccion(menuPanel, "VENTAS",
-                    List.of("Cotizaciones", "Punto de Venta", "Registro Ventas"),
-                    List.of("cotizaciones", "pos", "ventas"));
+                    List.of("Cotizaciones"),
+                    List.of("cotizaciones"));
         }
 
+        // VENTAS - Punto de Venta y Registro: solo Cajero y Admin
+        if (esCajeroOAdmin()) {
+            agregarSeccion(menuPanel, "VENTAS",
+                    List.of("Punto de Venta", "Registro Ventas"),
+                    List.of("pos", "ventas"));
+        }
+
+        // Si es admin muestra toda la seccion ventas completa de una vez
+        // (la logica anterior ya lo maneja via esSoloVendedor y esCajeroOAdmin
+        // pero admin cumple ambas condiciones y mostraria dos secciones "VENTAS".
+        // Se resuelve con el metodo esAdmin() que consolida.)
+
+        // INVENTARIO
         if (esBodegueroOAdmin()) {
-            // CAMBIO: el modulo de inventario ahora incluye gestion de productos
             agregarSeccion(menuPanel, "INVENTARIO",
                     List.of("Movimientos", "Gestion de Productos"),
                     List.of("inventario", "bodega_productos"));
         }
 
+        // CATALOGO - Nuevo Producto
         if (esCompradorOAdmin()) {
             agregarSeccion(menuPanel, "CATALOGO",
                     List.of("Nuevo Producto"),
                     List.of("nuevo_producto"));
         }
 
+        // ADMINISTRACION
         if (esAdmin()) {
             agregarSeccion(menuPanel, "ADMINISTRACION",
                     List.of("Panel Admin"),
@@ -276,7 +307,7 @@ public class MenuPrincipalView {
             case "pos" -> mostrarPuntoDeVenta();
             case "ventas" -> mostrarRegistroVentas();
             case "inventario" -> mostrarInventario();
-            case "bodega_productos" -> mostrarBodegaProductos(); // NUEVO
+            case "bodega_productos" -> mostrarBodegaProductos();
             case "nuevo_producto" -> abrirFormularioProducto();
             case "admin" -> mostrarAdminPanel();
             case "exit" -> cerrarSesion();
@@ -347,7 +378,6 @@ public class MenuPrincipalView {
             if (lblDashProductos != null)
                 lblDashProductos.setText("-");
         }
-
         try {
             int bajo = inventarioServices.obtenerProductosConStockBajo().size();
             if (lblDashStockBajo != null) {
@@ -359,7 +389,6 @@ public class MenuPrincipalView {
             if (lblDashStockBajo != null)
                 lblDashStockBajo.setText("-");
         }
-
         try {
             var ventas = documentoServices.obtenerTodasLasVentas();
             if (lblDashVentas != null)
@@ -445,7 +474,8 @@ public class MenuPrincipalView {
 
     private void mostrarPuntoDeVenta() {
         try {
-            VentasPosView view = new VentasPosView();
+            int idEmpleado = (cliente != null) ? cliente.getId() : 0;
+            VentasPosView view = new VentasPosView(idEmpleado);
             contentPanel.getChildren().add(view.getRoot());
         } catch (Exception e) {
             contentPanel.getChildren().add(placeholder("Punto de Venta", "Sin conexion a la base de datos."));
@@ -470,10 +500,6 @@ public class MenuPrincipalView {
         }
     }
 
-    /**
-     * NUEVO: modulo de gestion de productos accesible desde bodega.
-     * Permite crear, inhabilitar y consultar productos por ID o nombre.
-     */
     private void mostrarBodegaProductos() {
         try {
             BodegaProductoView view = new BodegaProductoView();
@@ -573,7 +599,7 @@ public class MenuPrincipalView {
         return box;
     }
 
-    // ── Verificadores de rol ───────────────────────────────────────────────────
+    // ── Verificadores de rol ───────────────────────────────────────
     private boolean esCliente() {
         return "CLIENTE".equals(rol);
     }
@@ -586,8 +612,14 @@ public class MenuPrincipalView {
         return !esCliente();
     }
 
-    private boolean esVendedorOAdmin() {
-        return "VENDEDOR".equals(rol) || "CAJERO".equals(rol) || esAdmin();
+    /** Vendedor pero NO cajero y NO admin (para cotizaciones exclusivamente). */
+    private boolean esSoloVendedor() {
+        return "VENDEDOR".equals(rol) || esAdmin();
+    }
+
+    /** Cajero o Admin (para Punto de Venta y Registro de Ventas). */
+    private boolean esCajeroOAdmin() {
+        return "CAJERO".equals(rol) || esAdmin();
     }
 
     private boolean esCompradorOAdmin() {
