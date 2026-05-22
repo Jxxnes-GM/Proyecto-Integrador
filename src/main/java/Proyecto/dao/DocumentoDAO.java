@@ -11,11 +11,16 @@ public class DocumentoDAO {
 
     public int crearDocumento(int idTipoDocumento, int idPersona, int idEmpleado,
             double descuento, double total, String observaciones) {
+        return crearDocumento(idTipoDocumento, idPersona, idEmpleado, 0, descuento, total, observaciones);
+    }
+
+    public int crearDocumento(int idTipoDocumento, int idPersona, int idEmpleado,
+            int idMetodoPago, double descuento, double total, String observaciones) {
 
         String sql = "INSERT INTO documento " +
-                "(id_tipo_documento, id_persona, id_empleado, descuento, subtotal, total, " +
-                " observaciones, fecha_documento, estado) " +
-                "VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'COMPLETADA')";
+                "(id_tipo_documento, id_persona, id_empleado, id_metodo_pago, " +
+                "descuento, subtotal, total, observaciones, fecha_documento, estado) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), 'COMPLETADA')";
 
         try (Connection conexion = conexionBD.obtenerConexion();
                 PreparedStatement pstmt = conexion.prepareStatement(
@@ -30,12 +35,18 @@ public class DocumentoDAO {
                 pstmt.setNull(3, Types.INTEGER);
             }
 
-            pstmt.setDouble(4, descuento);
+            if (idMetodoPago > 0) {
+                pstmt.setInt(4, idMetodoPago);
+            } else {
+                pstmt.setNull(4, Types.INTEGER);
+            }
+
+            pstmt.setDouble(5, descuento);
             // subtotal = total antes de IVA; se guarda igual al total si no hay
             // separacion de IVA en la tabla (la columna subtotal existe en el schema)
-            pstmt.setDouble(5, total - descuento);
-            pstmt.setDouble(6, total);
-            pstmt.setString(7, observaciones);
+            pstmt.setDouble(6, total - descuento);
+            pstmt.setDouble(7, total);
+            pstmt.setString(8, observaciones);
 
             int filasAfectadas = pstmt.executeUpdate();
             if (filasAfectadas == 0) {
@@ -43,13 +54,29 @@ public class DocumentoDAO {
                 return -1;
             }
 
-            // CORRECCION PRINCIPAL: usar getLong para evitar Conversion='1' en Connector/J
-            // 9.x
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return (int) rs.getLong(1);
+            long ultimoId = -1;
+            try {
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        ultimoId = rs.getLong(1);
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("DocumentoDAO.crearDocumento.getGeneratedKeys: " + e.getMessage());
+            }
+
+            if (ultimoId == -1) {
+                try (Statement stmt = conexion.createStatement();
+                        ResultSet rs2 = stmt.executeQuery("SELECT LAST_INSERT_ID()")) {
+                    if (rs2.next()) {
+                        ultimoId = rs2.getLong(1);
+                    }
+                } catch (SQLException e) {
+                    System.err.println("DocumentoDAO.crearDocumento.SELECT LAST_INSERT_ID: " + e.getMessage());
                 }
             }
+
+            return ultimoId != -1 ? (int) ultimoId : -1;
 
         } catch (SQLException e) {
             System.err.println("DocumentoDAO.crearDocumento: " + e.getMessage());
