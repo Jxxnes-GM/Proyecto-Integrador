@@ -15,19 +15,6 @@ import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-/**
- * Vista de Registro de Nuevo Cliente — TechZone
- *
- * Abre como ventana modal. Cuando el registro es exitoso,
- * {@link #isRegistradoExitoso()} devuelve {@code true}.
- *
- * Uso desde LoginView:
- * 
- * <pre>
- *   RegistroView reg = new RegistroView(loginStage);
- *   if (reg.isRegistradoExitoso()) { ... }
- * </pre>
- */
 public class RegistroView {
 
     // ── Campos del formulario ─────────────────────────────────────────────────

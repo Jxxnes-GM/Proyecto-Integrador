@@ -16,10 +16,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-/**
- * Vista del historial de compras de un cliente en JavaFX.
- * Muestra cada compra con su detalle y permite exportar el reporte.
- */
 public class RegistroCompraView {
 
     private final Cliente cliente;
@@ -60,7 +56,7 @@ public class RegistroCompraView {
 
         // ── Tabla principal de compras ────────────────────────────────────
         tablaCompras = new TableView<>(compras);
-        //  Correcto para JavaFX 21
+        // Correcto para JavaFX 21
         tablaCompras.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         tablaCompras.setPrefHeight(220);
 

@@ -13,16 +13,6 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-/**
- * Formulario modal para crear o editar un Proveedor — TechZone (Admin).
- *
- * Uso:
- * 
- * <pre>
- * new GestionProveedoresView(ownerStage, null, () -> refrescarTabla());
- * new GestionProveedoresView(ownerStage, rowData, () -> refrescarTabla());
- * </pre>
- */
 public class GestionProveedoresView {
 
     private final PersonaServices personaServices;
@@ -159,13 +149,6 @@ public class GestionProveedoresView {
         }
 
         try {
-            // TODO: conectar con ProveedorServices.crear/actualizar(...)
-            // personaServices.crearProveedor(
-            // txtEmpresa.getText().trim(), txtNit.getText().trim(),
-            // txtContacto.getText().trim(), txtApellidos.getText().trim(),
-            // txtEmail.getText().trim(), txtTelefono.getText().trim(),
-            // txtDireccion.getText().trim());
-
             new Alert(Alert.AlertType.INFORMATION,
                     "Proveedor " + (datosActuales == null ? "registrado" : "actualizado") + " correctamente.\n" +
                             "(Conecta el servicio de proveedores para persistencia en BD)",

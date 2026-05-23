@@ -1,13 +1,9 @@
 package Proyecto.View.Documento;
 
-import Proyecto.Model.Cliente;
 import Proyecto.Model.Producto;
-import Proyecto.dao.DocumentoDAO;
-import Proyecto.dao.InventarioDAO;
-import Proyecto.dao.PersonaDAO;
+import Proyecto.dao.ProcedimientosDAO;
 import Proyecto.services.PersonaServices;
 import Proyecto.services.ProductoServices;
-import javafx.application.Platform;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
@@ -22,35 +18,41 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class VentasPosView {
 
+    private static final DateTimeFormatter FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+
+    private static final String[] METODOS_PAGO = {
+            "Efectivo",
+            "Tarjeta Debito",
+            "Tarjeta Credito",
+            "Transferencia Bancaria",
+            "Nequi / Daviplata"
+    };
+
     private final int empleadoId;
-
     private final ProductoServices productoServices;
-    private final DocumentoDAO documentoDAO;
-    private final InventarioDAO inventarioDAO;
-    private final PersonaDAO personaDAO;
     private final PersonaServices personaServices;
+    private final ProcedimientosDAO procedimientosDAO;
 
-    private ObservableList<ItemVenta> itemsVenta;
-    private List<Producto> productosFiltrados;
-
-    // Cliente seleccionado para la venta actual
-    private Cliente clienteActual = null;
+    // Estado de la venta
+    private final ObservableList<ItemVenta> itemsVenta = FXCollections.observableArrayList();
+    private final List<Producto> productosFiltrados = new ArrayList<>();
+    private int idClienteSeleccionado = 0;
 
     // Widgets
+    private TextField txtBuscadorCliente;
+    private Label lblClienteInfo;
     private TextField txtBuscador;
     private ListView<String> listProductos;
     private Spinner<Integer> spinnerCantidad;
     private ComboBox<String> cbMetodoPago;
-    private TextField txtBuscarCliente;
-    private Label lblClienteInfo;
 
     private TableView<ItemVenta> tablaTicket;
     private Label lblSubtotal;
@@ -59,21 +61,12 @@ public class VentasPosView {
 
     private VBox root;
 
-    private static final String[] METODOS_PAGO = {
-            "Efectivo", "Tarjeta Debito", "Tarjeta Credito",
-            "Transferencia Bancaria", "Nequi / Daviplata"
-    };
-
     public VentasPosView(int empleadoId) {
         this.empleadoId = empleadoId;
         this.productoServices = new ProductoServices();
-        this.documentoDAO = new DocumentoDAO();
-        this.inventarioDAO = new InventarioDAO();
-        this.personaDAO = new PersonaDAO();
         this.personaServices = new PersonaServices();
-        this.itemsVenta = FXCollections.observableArrayList();
-        this.productosFiltrados = new ArrayList<>();
-        build();
+        this.procedimientosDAO = new ProcedimientosDAO();
+        construir();
         cargarProductos("");
     }
 
@@ -85,14 +78,18 @@ public class VentasPosView {
         return root;
     }
 
+    // =========================================================================
+    // CONSTRUCCION
+    // =========================================================================
+
     @SuppressWarnings("unchecked")
-    private void build() {
+    private void construir() {
         root = new VBox(12);
         root.setPadding(new Insets(15));
         root.setStyle("-fx-background-color: white;");
         VBox.setVgrow(root, Priority.ALWAYS);
 
-        // Encabezado
+        // -- Encabezado -------------------------------------------------------
         HBox header = new HBox(15);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(0, 0, 10, 0));
@@ -105,55 +102,54 @@ public class VentasPosView {
         Region hSpacer = new Region();
         HBox.setHgrow(hSpacer, Priority.ALWAYS);
 
-        Label lblFecha = new Label(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+        Label lblFecha = new Label(LocalDateTime.now().format(FMT));
         lblFecha.setFont(Font.font("Arial", 12));
         lblFecha.setTextFill(Color.GRAY);
 
         header.getChildren().addAll(lblTitulo, hSpacer, lblFecha);
 
+        // -- Cuerpo: dos columnas ---------------------------------------------
         HBox body = new HBox(12);
         VBox.setVgrow(body, Priority.ALWAYS);
 
-        // ── Columna izquierda ─────────────────────────────────────────────────
+        // ── Columna izquierda ─────────────────────────────────────────────
         VBox leftCol = new VBox(10);
-        leftCol.setPrefWidth(310);
-        leftCol.setMaxWidth(330);
+        leftCol.setPrefWidth(300);
+        leftCol.setMaxWidth(320);
 
-        // Seccion cliente - REDISENNADA
+        // Seccion cliente
         VBox secCliente = seccion("Datos del Cliente");
 
-        Label lblClienteHint = new Label("Buscar cliente por ID, nombre o correo:");
-        lblClienteHint.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-
-        txtBuscarCliente = new TextField();
-        txtBuscarCliente.setPromptText("ID, nombre o correo del cliente...");
-        txtBuscarCliente.setStyle("-fx-border-color: #C0C0C0; -fx-border-width: 1; -fx-padding: 7;");
+        txtBuscadorCliente = new TextField();
+        txtBuscadorCliente.setPromptText("Buscar cliente por ID, nombre o correo...");
+        txtBuscadorCliente.setStyle("-fx-border-color: #C0C0C0; -fx-border-width:1; -fx-padding:7;");
 
         Button btnBuscarCliente = boton("Buscar", "#00C8FF");
-        Button btnNuevoCliente = boton("Registro rapido", "#1A8A2A");
+        Button btnRegistroRapido = boton("Registro rapido", "#795548");
 
-        btnBuscarCliente.setOnAction(e -> buscarCliente());
-        btnNuevoCliente.setOnAction(e -> abrirRegistroRapido());
-
-        HBox fila1 = new HBox(8, txtBuscarCliente, btnBuscarCliente);
-        HBox.setHgrow(txtBuscarCliente, Priority.ALWAYS);
+        btnBuscarCliente.setMaxWidth(Double.MAX_VALUE);
+        btnRegistroRapido.setMaxWidth(Double.MAX_VALUE);
+        HBox filaBotonesCliente = new HBox(8, btnBuscarCliente, btnRegistroRapido);
+        HBox.setHgrow(btnBuscarCliente, Priority.ALWAYS);
 
         lblClienteInfo = new Label("Sin cliente seleccionado");
         lblClienteInfo.setFont(Font.font("Arial", 12));
         lblClienteInfo.setTextFill(Color.GRAY);
         lblClienteInfo.setWrapText(true);
 
-        Label lblMetodo = new Label("Metodo de Pago:");
-        lblMetodo.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        btnBuscarCliente.setOnAction(e -> buscarCliente());
+        txtBuscadorCliente.setOnAction(e -> buscarCliente());
+        btnRegistroRapido.setOnAction(e -> registroRapidoCliente());
 
+        secCliente.getChildren().addAll(txtBuscadorCliente, filaBotonesCliente, lblClienteInfo);
+
+        // Metodo de pago
+        VBox secPago = seccion("Metodo de Pago");
         cbMetodoPago = new ComboBox<>();
         cbMetodoPago.getItems().addAll(METODOS_PAGO);
         cbMetodoPago.getSelectionModel().selectFirst();
         cbMetodoPago.setMaxWidth(Double.MAX_VALUE);
-
-        secCliente.getChildren().addAll(
-                lblClienteHint, fila1, btnNuevoCliente, lblClienteInfo,
-                new Separator(), lblMetodo, cbMetodoPago);
+        secPago.getChildren().add(cbMetodoPago);
 
         // Seccion buscador de productos
         VBox secBuscar = seccion("Buscar Producto");
@@ -166,7 +162,7 @@ public class VentasPosView {
         txtBuscador.textProperty().addListener((obs, o, nv) -> cargarProductos(nv));
 
         listProductos = new ListView<>();
-        listProductos.setPrefHeight(240);
+        listProductos.setPrefHeight(220);
         VBox.setVgrow(listProductos, Priority.ALWAYS);
         listProductos.setOnMouseClicked(e -> {
             if (e.getClickCount() == 2)
@@ -188,9 +184,9 @@ public class VentasPosView {
         cantRow.setAlignment(Pos.CENTER_LEFT);
 
         secBuscar.getChildren().addAll(txtBuscador, listProductos, cantRow, btnAgregar);
-        leftCol.getChildren().addAll(secCliente, secBuscar);
+        leftCol.getChildren().addAll(secCliente, secPago, secBuscar);
 
-        // ── Columna derecha: ticket ────────────────────────────────────────────
+        // ── Columna derecha: ticket -------------------------------------------
         VBox rightCol = new VBox(10);
         HBox.setHgrow(rightCol, Priority.ALWAYS);
 
@@ -215,8 +211,8 @@ public class VentasPosView {
         colPU.setMaxWidth(100);
 
         TableColumn<ItemVenta, Double> colSub = new TableColumn<>("Subtotal");
-        colSub.setCellValueFactory(d -> new SimpleDoubleProperty(
-                d.getValue().getPrecio() * d.getValue().getCantidad()).asObject());
+        colSub.setCellValueFactory(
+                d -> new SimpleDoubleProperty(d.getValue().getPrecio() * d.getValue().getCantidad()).asObject());
         colSub.setCellFactory(c -> precioCell());
         colSub.setMaxWidth(110);
 
@@ -225,8 +221,8 @@ public class VentasPosView {
         colDel.setCellFactory(c -> new TableCell<>() {
             private final Button b = new Button("X");
             {
-                b.setStyle("-fx-background-color:#C83C3C;-fx-text-fill:white;-fx-cursor:hand;"
-                        + "-fx-border-width:0;-fx-padding:3 6 3 6;");
+                b.setStyle("-fx-background-color:#C83C3C;-fx-text-fill:white;" +
+                        "-fx-cursor:hand;-fx-border-width:0;-fx-padding:3 6 3 6;");
                 b.setOnAction(e -> {
                     itemsVenta.remove(getTableView().getItems().get(getIndex()));
                     actualizarTotales();
@@ -242,6 +238,7 @@ public class VentasPosView {
 
         tablaTicket.getColumns().addAll(colProd, colCant, colPU, colSub, colDel);
 
+        // Totales
         GridPane gridTotales = new GridPane();
         gridTotales.setHgap(20);
         gridTotales.setVgap(5);
@@ -263,6 +260,7 @@ public class VentasPosView {
 
         secTicket.getChildren().addAll(tablaTicket, gridTotales);
 
+        // Botones de cobro
         HBox btnCobro = new HBox(10);
         btnCobro.setAlignment(Pos.CENTER_RIGHT);
 
@@ -281,194 +279,139 @@ public class VentasPosView {
         root.getChildren().addAll(header, body);
     }
 
+    // =========================================================================
+    // BUSQUEDA DE CLIENTE
+    // =========================================================================
+
     private void buscarCliente() {
-        String query = txtBuscarCliente.getText().trim();
+        String query = txtBuscadorCliente.getText().trim();
         if (query.isEmpty()) {
-            info("Ingresa el ID, nombre o correo del cliente.");
+            info("Ingresa un nombre, ID o correo para buscar el cliente.");
             return;
         }
 
-        Cliente encontrado = null;
-
-        // Intentar por ID numerico
+        // Busqueda por ID numerico primero
         try {
             int id = Integer.parseInt(query);
-            encontrado = personaDAO.obtenerClientePorId(id);
+            var cliente = personaServices.obtenerCliente(id);
+            if (cliente != null) {
+                idClienteSeleccionado = cliente.getId();
+                lblClienteInfo.setText(
+                        "Cliente: " + cliente.getNombre() + " " + cliente.getApellido());
+                lblClienteInfo.setTextFill(Color.web("#1A8A2A"));
+                return;
+            }
         } catch (NumberFormatException ignored) {
         }
 
-        // Si no se encontro por ID, buscar por nombre/correo
-        if (encontrado == null) {
-            List<Cliente> resultados = personaDAO.buscarClientes(query);
-            if (!resultados.isEmpty()) {
-                if (resultados.size() == 1) {
-                    encontrado = resultados.get(0);
-                } else {
-                    // Mostrar opciones para seleccionar
-                    encontrado = seleccionarDeMultiples(resultados);
-                }
-            }
-        }
-
-        if (encontrado != null) {
-            seleccionarCliente(encontrado);
-        } else {
-            lblClienteInfo.setText(
-                    "No se encontro cliente con: \"" + query + "\"\n"
-                            + "Usa 'Registro rapido' para crear un nuevo cliente.");
+        // Busqueda por nombre o correo
+        var resultados = personaServices.buscarClientes(query);
+        if (resultados.isEmpty()) {
+            lblClienteInfo.setText("No se encontro cliente con: " + query);
             lblClienteInfo.setTextFill(Color.web("#C83C3C"));
-            clienteActual = null;
+            idClienteSeleccionado = 0;
+            return;
         }
+
+        if (resultados.size() == 1) {
+            var c = resultados.get(0);
+            idClienteSeleccionado = c.getId();
+            lblClienteInfo.setText("Cliente: " + c.getNombre() + " " + c.getApellido());
+            lblClienteInfo.setTextFill(Color.web("#1A8A2A"));
+            return;
+        }
+
+        // Multiples resultados: mostrar dialogo de seleccion
+        ChoiceDialog<String> seleccion = new ChoiceDialog<>();
+        seleccion.setTitle("Seleccionar cliente");
+        seleccion.setHeaderText("Se encontraron varios clientes. Selecciona uno:");
+        for (var c : resultados) {
+            seleccion.getItems().add(c.getId() + " - " + c.getNombre() + " " + c.getApellido()
+                    + " (" + c.getEmail() + ")");
+        }
+
+        if (!seleccion.getItems().isEmpty()) {
+            seleccion.setSelectedItem(seleccion.getItems().get(0));
+        }
+        seleccion.showAndWait().ifPresent(opcion -> {
+            int idx = seleccion.getItems().indexOf(opcion);
+            if (idx >= 0 && idx < resultados.size()) {
+                var c = resultados.get(idx);
+                idClienteSeleccionado = c.getId();
+                lblClienteInfo.setText("Cliente: " + c.getNombre() + " " + c.getApellido());
+                lblClienteInfo.setTextFill(Color.web("#1A8A2A"));
+            }
+        });
     }
 
-    private Cliente seleccionarDeMultiples(List<Cliente> lista) {
-        ChoiceDialog<String> dlg = new ChoiceDialog<>();
-        dlg.setTitle("Seleccionar Cliente");
-        dlg.setHeaderText("Se encontraron varios clientes. Selecciona uno:");
-        for (Cliente c : lista) {
-            dlg.getItems().add(c.getId() + " - " + c.getNombre() + " " + c.getApellido() + " (" + c.getEmail() + ")");
-        }
-        dlg.setSelectedItem(dlg.getItems().get(0));
-        var result = dlg.showAndWait();
-        if (result.isPresent()) {
-            int idx = dlg.getItems().indexOf(result.get());
-            return lista.get(idx);
-        }
-        return null;
-    }
-
-    private void seleccionarCliente(Cliente c) {
-        clienteActual = c;
-        lblClienteInfo.setText("Cliente: " + c.getNombre() + " " + c.getApellido()
-                + "\nCorreo: " + (c.getEmail() != null ? c.getEmail() : "-")
-                + "\nID: " + c.getId());
-        lblClienteInfo.setTextFill(Color.web("#1A8A2A"));
-    }
-
-    private void abrirRegistroRapido() {
-        Dialog<Cliente> dlg = new Dialog<>();
+    /**
+     * Registro rapido: solicita nombre y apellido, crea el cliente en BD
+     * y lo selecciona automaticamente para la venta actual.
+     */
+    private void registroRapidoCliente() {
+        Dialog<String[]> dlg = new Dialog<>();
         dlg.setTitle("Registro Rapido de Cliente");
-        dlg.setResizable(false);
+        dlg.setHeaderText("Ingresa los datos basicos del cliente:");
 
-        GridPane grid = new GridPane();
-        grid.setHgap(12);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
+        GridPane g = new GridPane();
+        g.setHgap(12);
+        g.setVgap(10);
+        g.setPadding(new Insets(15));
 
-        TextField txtNombre = campoTexto("Nombres *");
-        TextField txtApellido = campoTexto("Apellidos *");
-        TextField txtEmail = campoTexto("Correo electronico *");
-        TextField txtTelefono = campoTexto("Telefono");
-        TextField txtDocumento = campoTexto("Numero de documento *");
+        TextField txtNombre = campo("Nombre");
+        TextField txtApellido = campo("Apellido");
+        TextField txtEmail = campo("Correo electronico");
+        TextField txtTelefono = campo("Telefono (opcional)");
 
-        Label lblPass = new Label("Contrasena inicial generada automaticamente.");
-        lblPass.setFont(Font.font("Arial", 11));
-        lblPass.setTextFill(Color.GRAY);
-        lblPass.setWrapText(true);
+        g.add(lbl("Nombre *:"), 0, 0);
+        g.add(txtNombre, 1, 0);
+        g.add(lbl("Apellido *:"), 0, 1);
+        g.add(txtApellido, 1, 1);
+        g.add(lbl("Correo *:"), 0, 2);
+        g.add(txtEmail, 1, 2);
+        g.add(lbl("Telefono:"), 0, 3);
+        g.add(txtTelefono, 1, 3);
 
-        Label lblError = new Label("");
-        lblError.setFont(Font.font("Arial", 12));
-        lblError.setTextFill(Color.web("#C83C3C"));
-        lblError.setWrapText(true);
-
-        grid.add(etiqueta("Nombres:"), 0, 0);
-        grid.add(txtNombre, 1, 0);
-        grid.add(etiqueta("Apellidos:"), 0, 1);
-        grid.add(txtApellido, 1, 1);
-        grid.add(etiqueta("Correo:"), 0, 2);
-        grid.add(txtEmail, 1, 2);
-        grid.add(etiqueta("Telefono:"), 0, 3);
-        grid.add(txtTelefono, 1, 3);
-        grid.add(etiqueta("Documento:"), 0, 4);
-        grid.add(txtDocumento, 1, 4);
-        grid.add(lblPass, 0, 5);
-        GridPane.setColumnSpan(lblPass, 2);
-        grid.add(lblError, 0, 6);
-        GridPane.setColumnSpan(lblError, 2);
-
-        ButtonType btnCrear = new ButtonType("Crear y Seleccionar", ButtonBar.ButtonData.OK_DONE);
-        dlg.getDialogPane().getButtonTypes().addAll(btnCrear, ButtonType.CANCEL);
-        dlg.getDialogPane().setContent(grid);
-        dlg.getDialogPane().setPrefWidth(440);
-
-        // Deshabilitar el boton OK para validacion manual
-        Button okBtn = (Button) dlg.getDialogPane().lookupButton(btnCrear);
-        okBtn.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
-            lblError.setText("");
-
-            String nombre = txtNombre.getText().trim();
-            String apellido = txtApellido.getText().trim();
-            String email = txtEmail.getText().trim();
-            String telefono = txtTelefono.getText().trim();
-            String documento = txtDocumento.getText().trim();
-
-            if (nombre.isEmpty()) {
-                lblError.setText("El nombre es obligatorio.");
-                event.consume();
-                return;
-            }
-            if (apellido.isEmpty()) {
-                lblError.setText("El apellido es obligatorio.");
-                event.consume();
-                return;
-            }
-            if (email.isEmpty() || !email.contains("@")) {
-                lblError.setText("Ingresa un correo valido.");
-                event.consume();
-                return;
-            }
-            if (documento.isEmpty()) {
-                lblError.setText("El numero de documento es obligatorio.");
-                event.consume();
-                return;
-            }
-
-            // Contrasena temporal: nombre+documento (el cliente la cambia desde su perfil)
-            String passwordTemporal = nombre.toLowerCase().replaceAll("\\s+", "") + documento;
-
-            okBtn.setDisable(true);
-            okBtn.setText("Registrando...");
-
-            // Ejecutar en hilo separado para no bloquear UI
-            new Thread(() -> {
-                boolean ok;
-                try {
-                    ok = personaServices.registrarCliente(
-                            nombre, apellido, email, telefono, documento, passwordTemporal, "");
-                } catch (Exception ex) {
-                    ok = false;
-                }
-                boolean exito = ok;
-                Platform.runLater(() -> {
-                    okBtn.setDisable(false);
-                    okBtn.setText("Crear y Seleccionar");
-                    if (exito) {
-                        // Recuperar el cliente recien creado para obtener su ID
-                        Cliente nuevo = personaDAO.obtenerClientePorEmail(email.toLowerCase());
-                        if (nuevo != null) {
-                            seleccionarCliente(nuevo);
-                            dlg.setResult(nuevo);
-                            dlg.close();
-                        } else {
-                            lblError.setText("Cliente creado pero no se pudo recuperar. Busca por correo.");
-                        }
-                    } else {
-                        lblError.setText(
-                                "No se pudo crear el cliente. Verifica que el correo y documento no esten registrados.");
-                        event.consume();
-                    }
-                });
-            }).start();
-
-            event.consume(); // siempre consumir; el cierre lo maneja el hilo
+        ButtonType btnOk = new ButtonType("Registrar", ButtonBar.ButtonData.OK_DONE);
+        dlg.getDialogPane().getButtonTypes().addAll(btnOk, ButtonType.CANCEL);
+        dlg.getDialogPane().setContent(g);
+        dlg.setResultConverter(bt -> {
+            if (bt == btnOk)
+                return new String[] {
+                        txtNombre.getText().trim(),
+                        txtApellido.getText().trim(),
+                        txtEmail.getText().trim(),
+                        txtTelefono.getText().trim() };
+            return null;
         });
 
-        dlg.setResultConverter(bt -> null);
-        dlg.showAndWait();
+        dlg.showAndWait().ifPresent(datos -> {
+            if (datos[0].isEmpty() || datos[1].isEmpty() || datos[2].isEmpty()) {
+                info("Nombre, apellido y correo son obligatorios.");
+                return;
+            }
+            // Generar documento temporal unico
+            String docTmp = "TMP-" + System.currentTimeMillis();
+            boolean ok = personaServices.registrarCliente(
+                    datos[0], datos[1], datos[2], datos[3], docTmp, "techzone1", datos[2]);
+            if (ok) {
+                // Recuperar el cliente recien creado para obtener su ID
+                var lista = personaServices.buscarClientes(datos[2]);
+                if (!lista.isEmpty()) {
+                    var c = lista.get(0);
+                    idClienteSeleccionado = c.getId();
+                    lblClienteInfo.setText("Cliente: " + c.getNombre() + " " + c.getApellido()
+                            + " (nuevo)");
+                    lblClienteInfo.setTextFill(Color.web("#1A8A2A"));
+                }
+            } else {
+                info("No se pudo registrar el cliente. Es posible que el correo ya este registrado.");
+            }
+        });
     }
 
     // =========================================================================
-    // LOGICA DE PRODUCTOS
+    // PRODUCTOS
     // =========================================================================
 
     private void cargarProductos(String query) {
@@ -491,7 +434,7 @@ public class VentasPosView {
                 }
             }
         } catch (Exception e) {
-            listProductos.setPlaceholder(new Label("Error al cargar productos: " + e.getMessage()));
+            listProductos.setPlaceholder(new Label("Error al cargar productos."));
         }
     }
 
@@ -506,7 +449,8 @@ public class VentasPosView {
 
         int cantEnTicket = itemsVenta.stream()
                 .filter(i -> i.getIdProducto() == p.getIdProducto())
-                .mapToInt(ItemVenta::getCantidad).sum();
+                .mapToInt(ItemVenta::getCantidad)
+                .sum();
 
         if (cantEnTicket + cant > p.getCantidad()) {
             info("Stock insuficiente. Disponible: " + p.getCantidad()
@@ -538,18 +482,36 @@ public class VentasPosView {
     }
 
     // =========================================================================
-    // COBRO Y EMISION DE FACTURA - CORREGIDO
+    // COBRO - CORRECCION PRINCIPAL
     // =========================================================================
 
+    /**
+     * Registra la venta usando sp_registrar_venta via ProcedimientosDAO.
+     *
+     * ANTES (incorrecto):
+     * documentoDAO.crearDocumento(...) → rs.getInt(1) falla con Connector/J 9.x
+     * inventarioDAO.registrarMovimientoConPrecio(...) → llamadas separadas, sin
+     * atomicidad
+     * inventarioDAO.actualizarStock(...)
+     *
+     * AHORA (correcto):
+     * procedimientosDAO.registrarVenta(...) → una sola llamada al SP
+     * El SP valida stock, descuenta inventario y registra movimientos
+     * en una transaccion atomica dentro de MySQL.
+     * Los parametros OUT del SP (idDocumento, mensaje) se leen con
+     * cs.getInt(5) / cs.getString(6) que funciona correctamente con
+     * CallableStatement en Connector/J 9.x.
+     */
     private void cobrarYEmitirFactura() {
         if (itemsVenta.isEmpty()) {
             info("Agrega al menos un producto al ticket.");
             return;
         }
 
-        if (clienteActual == null) {
-            info("Debes seleccionar o registrar un cliente antes de procesar la venta.\n\n"
-                    + "Usa el buscador de clientes o el boton 'Registro rapido'.");
+        // Validar cliente
+        if (idClienteSeleccionado <= 0) {
+            info("Busca y selecciona un cliente antes de cobrar.\n" +
+                    "Usa el campo de busqueda o el boton 'Registro rapido'.");
             return;
         }
 
@@ -557,79 +519,87 @@ public class VentasPosView {
         int idMetodoPago = cbMetodoPago.getSelectionModel().getSelectedIndex() + 1;
 
         Alert conf = new Alert(Alert.AlertType.CONFIRMATION,
-                "Confirmar cobro de " + lblTotal.getText() + " con " + metodo
-                        + "\nCliente: " + clienteActual.getNombre() + " " + clienteActual.getApellido() + "?",
+                "Confirmar cobro de " + lblTotal.getText() + " con " + metodo + "?",
                 ButtonType.YES, ButtonType.NO);
         conf.setTitle("Confirmar Cobro");
-
         conf.showAndWait().ifPresent(r -> {
             if (r != ButtonType.YES)
                 return;
 
+            // Construir JSON de productos para el SP
+            // Formato: [{"id":1,"qty":2,"precio":2800000},...]
+            // El precio que se envia al SP es el precio de venta SIN IVA,
+            // porque el SP calcula el total como suma de qty*precio.
+            // El IVA se muestra al cliente en el ticket pero el SP registra
+            // el precio de venta base del catalogo.
+            StringBuilder json = new StringBuilder("[");
+            for (int i = 0; i < itemsVenta.size(); i++) {
+                ItemVenta item = itemsVenta.get(i);
+                if (i > 0)
+                    json.append(",");
+                json.append(String.format(
+                        "{\"id\":%d,\"qty\":%d,\"precio\":%.0f}",
+                        item.getIdProducto(),
+                        item.getCantidad(),
+                        item.getPrecio()));
+            }
+            json.append("]");
+
             try {
-                double subtotalSinIva = itemsVenta.stream()
-                        .mapToDouble(i -> i.getPrecio() * i.getCantidad()).sum();
-                double totalConIva = subtotalSinIva * 1.19;
+                Map<String, Object> resultado = procedimientosDAO.registrarVenta(
+                        idClienteSeleccionado,
+                        empleadoId > 0 ? empleadoId : 1, // fallback al primer empleado si no hay sesion
+                        idMetodoPago,
+                        json.toString());
 
-                int idDocumento = documentoDAO.crearDocumento(
-                        1, // Factura de Venta
-                        clienteActual.getId(), // id_persona del cliente real
-                        empleadoId, // id del cajero autenticado
-                        0, // descuento
-                        totalConIva,
-                        "Venta POS - Metodo: " + metodo);
+                int idDocumento = ((Number) resultado.getOrDefault("idDocumento", -1)).intValue();
+                String mensaje = (String) resultado.getOrDefault("mensaje", "Error desconocido");
 
-                if (idDocumento == -1) {
-                    new Alert(Alert.AlertType.ERROR,
-                            "Error al registrar la venta en la base de datos.", ButtonType.OK).showAndWait();
-                    return;
+                if (idDocumento > 0) {
+                    // Guardar snapshot del ticket antes de limpiar
+                    List<ItemVenta> snapshotItems = new ArrayList<>(itemsVenta);
+                    String subtotalStr = lblSubtotal.getText();
+                    String ivaStr = lblIva.getText();
+                    String totalStr = lblTotal.getText();
+
+                    // Limpiar estado de la venta
+                    itemsVenta.clear();
+                    actualizarTotales();
+                    idClienteSeleccionado = 0;
+                    lblClienteInfo.setText("Sin cliente seleccionado");
+                    lblClienteInfo.setTextFill(Color.GRAY);
+                    txtBuscadorCliente.clear();
+                    cargarProductos("");
+
+                    // Mostrar ticket
+                    emitirFactura(idDocumento, metodo, snapshotItems,
+                            subtotalStr, ivaStr, totalStr);
+                } else {
+                    error("No se pudo registrar la venta:\n" + mensaje);
                 }
-
-                // Registrar movimientos de inventario y descontar stock
-                for (ItemVenta item : itemsVenta) {
-                    inventarioDAO.registrarMovimientoConPrecio(
-                            idDocumento,
-                            item.getIdProducto(),
-                            empleadoId,
-                            item.getCantidad(),
-                            item.getPrecio());
-                    inventarioDAO.actualizarStock(item.getIdProducto(), -item.getCantidad());
-                }
-
-                // Emitir factura y limpiar ticket
-                emitirFactura(metodo, idDocumento, clienteActual);
-                itemsVenta.clear();
-                actualizarTotales();
-                clienteActual = null;
-                lblClienteInfo.setText("Sin cliente seleccionado");
-                lblClienteInfo.setTextFill(Color.GRAY);
-                txtBuscarCliente.clear();
-                cargarProductos(""); // refrescar stock visible
 
             } catch (Exception ex) {
-                new Alert(Alert.AlertType.ERROR,
-                        "Error al registrar la venta: " + ex.getMessage(), ButtonType.OK).showAndWait();
+                error("Error al registrar la venta: " + ex.getMessage());
             }
         });
     }
 
-    private void emitirFactura(String metodoPago, int idDocumento, Cliente cliente) {
+    private void emitirFactura(int idDocumento, String metodoPago,
+            List<ItemVenta> items,
+            String subtotal, String iva, String total) {
         StringBuilder sb = new StringBuilder();
         sb.append("===========================================\n");
         sb.append("          TECHZONE  -  FACTURA\n");
         sb.append("===========================================\n");
-        sb.append(String.format("  N Documento  : %d%n", idDocumento));
-        sb.append(String.format("  Fecha        : %s%n",
-                LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
-        sb.append(String.format("  Metodo pago  : %s%n", metodoPago));
-        sb.append(String.format("  Cliente      : %s %s%n",
-                cliente.getNombre(), cliente.getApellido()));
-        sb.append(String.format("  ID Cliente   : %d%n", cliente.getId()));
+        sb.append(String.format("  N Documento : %d%n", idDocumento));
+        sb.append(String.format("  Fecha       : %s%n",
+                LocalDateTime.now().format(FMT)));
+        sb.append(String.format("  Metodo pago : %s%n", metodoPago));
         sb.append("-------------------------------------------\n");
         sb.append(String.format("  %-28s %6s %12s%n", "PRODUCTO", "CANT", "SUBTOTAL"));
         sb.append("-------------------------------------------\n");
 
-        for (ItemVenta item : itemsVenta) {
+        for (ItemVenta item : items) {
             sb.append(String.format("  %-28s %6d %12,.0f%n",
                     truncar(item.getNombre(), 28),
                     item.getCantidad(),
@@ -637,16 +607,16 @@ public class VentasPosView {
         }
 
         sb.append("-------------------------------------------\n");
-        sb.append(String.format("  Subtotal  : %s%n", lblSubtotal.getText()));
-        sb.append(String.format("  IVA(19%%) : %s%n", lblIva.getText()));
-        sb.append(String.format("  TOTAL     : %s%n", lblTotal.getText()));
+        sb.append(String.format("  Subtotal  : %s%n", subtotal));
+        sb.append(String.format("  IVA (19%%) : %s%n", iva));
+        sb.append(String.format("  TOTAL     : %s%n", total));
         sb.append("===========================================\n");
         sb.append("   Gracias por tu compra en TechZone!\n");
 
         TextArea txt = new TextArea(sb.toString());
         txt.setEditable(false);
         txt.setFont(Font.font("Monospaced", 12));
-        txt.setPrefSize(480, 420);
+        txt.setPrefSize(480, 380);
 
         Dialog<Void> dlg = new Dialog<>();
         dlg.setTitle("Factura N " + idDocumento);
@@ -659,7 +629,9 @@ public class VentasPosView {
         if (itemsVenta.isEmpty())
             return;
         Alert conf = new Alert(Alert.AlertType.CONFIRMATION,
-                "Cancelar la venta y limpiar el ticket?", ButtonType.YES, ButtonType.NO);
+                "Cancelar la venta y limpiar el ticket?",
+                ButtonType.YES, ButtonType.NO);
+        conf.setTitle("Cancelar venta");
         conf.showAndWait().ifPresent(r -> {
             if (r == ButtonType.YES) {
                 itemsVenta.clear();
@@ -683,18 +655,16 @@ public class VentasPosView {
         return sec;
     }
 
-    private TextField campoTexto(String prompt) {
-        TextField tf = new TextField();
-        tf.setPromptText(prompt);
-        tf.setPrefWidth(200);
-        tf.setStyle("-fx-border-color:#C0C0C0;-fx-border-width:1;-fx-padding:7;");
-        return tf;
-    }
-
     private Label etiqueta(String texto) {
         Label l = new Label(texto);
-        l.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        l.setFont(Font.font("Arial", FontWeight.BOLD, 13));
         l.setTextFill(Color.web("#555555"));
+        return l;
+    }
+
+    private Label lbl(String texto) {
+        Label l = new Label(texto);
+        l.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         return l;
     }
 
@@ -709,9 +679,17 @@ public class VentasPosView {
         Button b = new Button(texto);
         b.setFont(Font.font("Arial", FontWeight.BOLD, 12));
         b.setTextFill(Color.WHITE);
-        b.setStyle("-fx-background-color:" + color + ";-fx-border-width:0;"
-                + "-fx-cursor:hand;-fx-padding:8 14 8 14;");
+        b.setStyle("-fx-background-color:" + color +
+                ";-fx-border-width:0;-fx-cursor:hand;-fx-padding:8 14 8 14;");
         return b;
+    }
+
+    private TextField campo(String prompt) {
+        TextField tf = new TextField();
+        tf.setPromptText(prompt);
+        tf.setStyle("-fx-border-color:#C0C0C0;-fx-border-width:1;-fx-padding:7;");
+        tf.setMaxWidth(Double.MAX_VALUE);
+        return tf;
     }
 
     private TableCell<ItemVenta, Double> precioCell() {
@@ -727,11 +705,15 @@ public class VentasPosView {
     private String truncar(String s, int max) {
         if (s == null)
             return "-";
-        return s.length() > max ? s.substring(0, max - 1) + "..." : s;
+        return s.length() > max ? s.substring(0, max - 1) + "." : s;
     }
 
     private void info(String msg) {
         new Alert(Alert.AlertType.INFORMATION, msg, ButtonType.OK).showAndWait();
+    }
+
+    private void error(String msg) {
+        new Alert(Alert.AlertType.ERROR, msg, ButtonType.OK).showAndWait();
     }
 
     // =========================================================================

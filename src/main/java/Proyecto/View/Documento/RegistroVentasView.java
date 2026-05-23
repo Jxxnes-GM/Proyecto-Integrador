@@ -17,10 +17,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-/**
- * Vista del registro general de ventas (vista administrativa) en JavaFX.
- * Muestra todas las ventas, estadísticas y permite filtrar por rango de fechas.
- */
 public class RegistroVentasView {
 
     private final DocumentoServices documentoServices;
@@ -107,7 +103,7 @@ public class RegistroVentasView {
 
         // ── Tabla de ventas ───────────────────────────────────────────────
         tablaVentas = new TableView<>(ventas);
-        //  Correcto para JavaFX 21
+        // Correcto para JavaFX 21
         tablaVentas.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tablaVentas, Priority.ALWAYS);
 

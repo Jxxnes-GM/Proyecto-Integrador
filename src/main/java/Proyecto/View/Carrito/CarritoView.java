@@ -17,11 +17,6 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
-/**
- * Vista del Carrito de Compras en JavaFX.
- * Muestra los productos añadidos, permite modificar cantidades,
- * eliminar ítems y finalizar la compra.
- */
 public class CarritoView {
 
     private final Cliente cliente;
@@ -61,7 +56,7 @@ public class CarritoView {
 
         // Tabla
         tabla = new TableView<>(items);
-        //  Correcto para JavaFX 21
+        // Correcto para JavaFX 21
         tabla.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
         VBox.setVgrow(tabla, Priority.ALWAYS);
 

@@ -151,23 +151,6 @@ public class MenuPrincipalView {
         };
     }
 
-    // ── Menu lateral CORREGIDO ─────────────────────────────────────────────────
-    /**
-     * CORRECCION DE ROLES:
-     *
-     * Seccion PRINCIPAL: todos los empleados y clientes ven el Catalogo.
-     * Solo empleados y admin ven Dashboard.
-     *
-     * Seccion VENTAS:
-     * - "Cotizaciones" -> Vendedor y Admin unicamente.
-     * - "Punto de Venta" -> Cajero y Admin unicamente.
-     * - "Registro Ventas" -> Cajero y Admin unicamente.
-     *
-     * Seccion MI CUENTA: clientes.
-     * Seccion INVENTARIO: bodeguero y admin.
-     * Seccion CATALOGO (Nuevo Producto): comprador y admin.
-     * Seccion ADMINISTRACION: admin.
-     */
     private VBox crearMenuLateral() {
         VBox menuPanel = new VBox(4);
         menuPanel.setPrefWidth(240);
