@@ -20,6 +20,7 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
+import java.text.DecimalFormat;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +35,7 @@ public class MovimientosView {
     private static final String COLOR_AZUL = "#0A1933";
     private static final String COLOR_CYAN = "#00C8FF";
     private static final String COLOR_ROJO = "#C83C3C";
-    private static final String COLOR_VERDE = null;
+    private static final String COLOR_VERDE = "#1A8A2A";
 
     private final InventarioServices inventarioServices;
     private final ProductoServices productoServices;
@@ -578,12 +579,13 @@ public class MovimientosView {
     }
 
     private void abrirDialogoCompra() {
-        Stage ventana = new Stage();
-        ventana.setTitle("Registrar Compra a Proveedor");
-        ventana.setResizable(true);
+        try {
+            Stage ventana = new Stage();
+            ventana.setTitle("Registrar Compra a Proveedor");
+            ventana.setResizable(true);
 
-        // -- Encabezado -------------------------------------------------------
-        Label lblTitulo = new Label("Registrar Compra a Proveedor");
+            // -- Encabezado -------------------------------------------------------
+            Label lblTitulo = new Label("Registrar Compra a Proveedor");
         lblTitulo.setFont(Font.font("Arial", FontWeight.BOLD, 18));
         lblTitulo.setTextFill(Color.web(COLOR_AZUL));
 
@@ -792,6 +794,10 @@ public class MovimientosView {
         ventana.setScene(escena);
         ventana.initModality(Modality.APPLICATION_MODAL);
         ventana.showAndWait();
+    } catch (Exception ex) {
+        System.err.println("MovimientosView.abrirDialogoCompra: " + ex.getMessage());
+        mostrarError("No se pudo abrir el formulario de compra. " + ex.getMessage());
+    }
     }
 
     /**
@@ -957,56 +963,78 @@ public class MovimientosView {
     }
 
     private void mostrarReporteCompras() {
-        // Reporte de todos los movimientos de tipo Compra a Proveedor
-        List<Map<String, Object>> lista = inventarioServices.reporteMovimientos(
-                null, "2000-01-01", "2099-12-31");
+        try {
+            List<Map<String, Object>> lista = inventarioServices.reporteMovimientos(
+                    null, "2000-01-01", "2099-12-31");
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("===========================================\n");
-        sb.append("    REPORTE DE COMPRAS A PROVEEDORES\n");
-        sb.append("===========================================\n");
-        sb.append(String.format("  Generado: %s%n",
-                LocalDateTime.now().format(FMT_FECHA)));
-        sb.append("-------------------------------------------\n");
-        sb.append(String.format("  %-8s %-20s %-18s %6s %12s%n",
-                "Mov.", "Tipo", "Producto", "Cant.", "Subtotal"));
-        sb.append("-------------------------------------------\n");
+            if (lista == null || lista.isEmpty()) {
+                mostrarError("No se encontraron registros de compras para mostrar.");
+                return;
+            }
 
-        double totalGeneral = 0;
-        int contCompras = 0;
+            DecimalFormat moneda = new DecimalFormat("$#,##0");
+            StringBuilder sb = new StringBuilder();
+            sb.append("===========================================\n");
+            sb.append("    REPORTE DE COMPRAS A PROVEEDORES\n");
+            sb.append("===========================================\n");
+            sb.append("  Generado: ").append(LocalDateTime.now().format(FMT_FECHA)).append("\n");
+            sb.append("-------------------------------------------\n");
+            sb.append("  Mov.     Tipo                 Producto           Cant.     Subtotal\n");
+            sb.append("-------------------------------------------\n");
 
-        for (Map<String, Object> fila : lista) {
-            String tipo = (String) fila.getOrDefault("tipo_documento", "");
-            if (!tipo.toLowerCase().contains("compra"))
-                continue;
+            double totalGeneral = 0;
+            int contCompras = 0;
 
-            int id = ((Number) fila.getOrDefault("id_movimiento", 0)).intValue();
-            String prod = (String) fila.getOrDefault("producto", "-");
-            int cant = ((Number) fila.getOrDefault("cantidad", 0)).intValue();
-            Object subObj = fila.get("subtotal_linea");
-            double sub = subObj != null ? ((Number) subObj).doubleValue() : 0.0;
-            Object fechaObj = fila.get("fecha_movimiento");
-            String fecha = fechaObj instanceof java.sql.Timestamp
-                    ? ((java.sql.Timestamp) fechaObj).toLocalDateTime().format(FMT_FECHA)
-                    : "-";
+            for (Map<String, Object> fila : lista) {
+                String tipo = fila.get("tipo_documento") instanceof String
+                        ? ((String) fila.get("tipo_documento")).toLowerCase()
+                        : "";
+                if (!tipo.contains("compra")) {
+                    continue;
+                }
 
-            sb.append(String.format("  %-8d %-20s %-18s %6d %12,.0f%n",
-                    id, truncar(tipo, 20), truncar(prod, 18), cant, sub));
-            sb.append(String.format("    Fecha ingreso: %s%n", fecha));
-            sb.append(String.format("    Proveedor: %s%n",
-                    fila.getOrDefault("persona_doc", "-")));
-            sb.append("\n");
+                int id = ((Number) fila.getOrDefault("id_movimiento", 0)).intValue();
+                String prod = fila.get("producto") instanceof String
+                        ? (String) fila.get("producto") : "-";
+                int cant = ((Number) fila.getOrDefault("cantidad", 0)).intValue();
+                Object subObj = fila.get("subtotal_linea");
+                double sub = subObj instanceof Number ? ((Number) subObj).doubleValue() : 0.0;
+                Object fechaObj = fila.get("fecha_movimiento");
+                String fecha = fechaObj instanceof java.sql.Timestamp
+                        ? ((java.sql.Timestamp) fechaObj).toLocalDateTime().format(FMT_FECHA)
+                        : "-";
+                String persona = fila.getOrDefault("persona_doc", "-").toString();
 
-            totalGeneral += sub;
-            contCompras++;
+                sb.append("  ")
+                        .append(padRight(String.valueOf(id), 8))
+                        .append(padRight(truncar(tipo, 20), 20))
+                        .append(padRight(truncar(prod, 18), 18))
+                        .append(padLeft(String.valueOf(cant), 6))
+                        .append(padLeft(moneda.format(sub), 12))
+                        .append("\n");
+                sb.append("    Fecha ingreso: ").append(fecha).append("\n");
+                sb.append("    Proveedor: ").append(persona).append("\n\n");
+
+                totalGeneral += sub;
+                contCompras++;
+            }
+
+            if (contCompras == 0) {
+                mostrarError("No se encontraron compras en el periodo indicado.");
+                return;
+            }
+
+            sb.append("-------------------------------------------\n");
+            sb.append("  Total compras:        ").append(contCompras).append(" registros\n");
+            sb.append("  Total invertido:      ").append(moneda.format(totalGeneral)).append("\n");
+            sb.append("===========================================\n");
+
+            mostrarTicket("Reporte de Compras a Proveedores", sb.toString());
+        } catch (Exception ex) {
+            System.err.println("MovimientosView.mostrarReporteCompras: " + ex.getMessage());
+            ex.printStackTrace();
+            mostrarError("Error al generar el reporte de compras: " + ex.getMessage());
         }
-
-        sb.append("-------------------------------------------\n");
-        sb.append(String.format("  Total compras:        %d registros%n", contCompras));
-        sb.append(String.format("  Total invertido:      $%,.0f%n", totalGeneral));
-        sb.append("===========================================\n");
-
-        mostrarTicket("Reporte de Compras a Proveedores", sb.toString());
     }
 
     private void mostrarTicket(String titulo, String contenido) {
@@ -1087,6 +1115,22 @@ public class MovimientosView {
         if (s == null)
             return "-";
         return s.length() > max ? s.substring(0, max - 1) + "." : s;
+    }
+
+    private String padRight(String text, int width) {
+        if (text == null)
+            text = "";
+        if (text.length() >= width)
+            return text;
+        return text + " ".repeat(width - text.length());
+    }
+
+    private String padLeft(String text, int width) {
+        if (text == null)
+            text = "";
+        if (text.length() >= width)
+            return text;
+        return " ".repeat(width - text.length()) + text;
     }
 
     private void mostrarInfo(String msg) {

@@ -18,6 +18,9 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -471,14 +474,46 @@ public class VentasPosView {
         actualizarTotales();
     }
 
+    private static final DecimalFormat PESOS_FORMAT;
+
+    static {
+        DecimalFormatSymbols symbols = new DecimalFormatSymbols();
+        symbols.setGroupingSeparator('.');
+        symbols.setDecimalSeparator(',');
+        PESOS_FORMAT = new DecimalFormat("#,##0", symbols);
+        PESOS_FORMAT.setGroupingUsed(true);
+        PESOS_FORMAT.setMinimumFractionDigits(0);
+        PESOS_FORMAT.setMaximumFractionDigits(0);
+    }
+
+    private String formatPesos(double importe) {
+        return "$" + PESOS_FORMAT.format(importe);
+    }
+
+    private String padRight(String texto, int ancho) {
+        if (texto == null)
+            texto = "";
+        if (texto.length() >= ancho)
+            return texto;
+        return texto + " ".repeat(ancho - texto.length());
+    }
+
+    private String padLeft(String texto, int ancho) {
+        if (texto == null)
+            texto = "";
+        if (texto.length() >= ancho)
+            return texto;
+        return " ".repeat(ancho - texto.length()) + texto;
+    }
+
     private void actualizarTotales() {
         double subtotal = itemsVenta.stream()
                 .mapToDouble(i -> i.getPrecio() * i.getCantidad()).sum();
         double iva = subtotal * 0.19;
         double total = subtotal + iva;
-        lblSubtotal.setText(String.format("$%,.0f", subtotal));
-        lblIva.setText(String.format("$%,.0f", iva));
-        lblTotal.setText(String.format("$%,.0f", total));
+        lblSubtotal.setText(formatPesos(subtotal));
+        lblIva.setText(formatPesos(iva));
+        lblTotal.setText(formatPesos(total));
     }
 
     // =========================================================================
@@ -526,60 +561,53 @@ public class VentasPosView {
             if (r != ButtonType.YES)
                 return;
 
-            // Construir JSON de productos para el SP
-            // Formato: [{"id":1,"qty":2,"precio":2800000},...]
-            // El precio que se envia al SP es el precio de venta SIN IVA,
-            // porque el SP calcula el total como suma de qty*precio.
-            // El IVA se muestra al cliente en el ticket pero el SP registra
-            // el precio de venta base del catalogo.
-            StringBuilder json = new StringBuilder("[");
-            for (int i = 0; i < itemsVenta.size(); i++) {
-                ItemVenta item = itemsVenta.get(i);
-                if (i > 0)
-                    json.append(",");
-                json.append(String.format(
-                        "{\"id\":%d,\"qty\":%d,\"precio\":%.0f}",
-                        item.getIdProducto(),
-                        item.getCantidad(),
-                        item.getPrecio()));
-            }
-            json.append("]");
-
             try {
-                Map<String, Object> resultado = procedimientosDAO.registrarVenta(
-                        idClienteSeleccionado,
-                        empleadoId > 0 ? empleadoId : 1, // fallback al primer empleado si no hay sesion
+                double subtotalSinIva = itemsVenta.stream()
+                        .mapToDouble(i -> i.getPrecio() * i.getCantidad()).sum();
+                double totalConIva = subtotalSinIva * 1.19;
+
+                int idDocumento = documentoDAO.crearDocumento(
+                        1, // Factura de Venta
+                        clienteActual.getId(), // id_persona del cliente real
+                        empleadoId, // id del cajero autenticado
                         idMetodoPago,
-                        json.toString());
+                        0, // descuento
+                        totalConIva,
+                        "Venta POS - Metodo: " + metodo);
 
-                int idDocumento = ((Number) resultado.getOrDefault("idDocumento", -1)).intValue();
-                String mensaje = (String) resultado.getOrDefault("mensaje", "Error desconocido");
-
-                if (idDocumento > 0) {
-                    // Guardar snapshot del ticket antes de limpiar
-                    List<ItemVenta> snapshotItems = new ArrayList<>(itemsVenta);
-                    String subtotalStr = lblSubtotal.getText();
-                    String ivaStr = lblIva.getText();
-                    String totalStr = lblTotal.getText();
-
-                    // Limpiar estado de la venta
-                    itemsVenta.clear();
-                    actualizarTotales();
-                    idClienteSeleccionado = 0;
-                    lblClienteInfo.setText("Sin cliente seleccionado");
-                    lblClienteInfo.setTextFill(Color.GRAY);
-                    txtBuscadorCliente.clear();
-                    cargarProductos("");
-
-                    // Mostrar ticket
-                    emitirFactura(idDocumento, metodo, snapshotItems,
-                            subtotalStr, ivaStr, totalStr);
-                } else {
-                    error("No se pudo registrar la venta:\n" + mensaje);
+                if (idDocumento == -1) {
+                    new Alert(Alert.AlertType.ERROR,
+                            "Error al registrar la venta en la base de datos.", ButtonType.OK).showAndWait();
+                    return;
                 }
 
+                // Registrar movimientos de inventario y descontar stock
+                for (ItemVenta item : itemsVenta) {
+                    inventarioDAO.registrarMovimientoConPrecio(
+                            idDocumento,
+                            item.getIdProducto(),
+                            empleadoId,
+                            item.getCantidad(),
+                            item.getPrecio());
+                    inventarioDAO.actualizarStock(item.getIdProducto(), -item.getCantidad());
+                }
+
+                // Emitir factura y limpiar ticket
+                emitirFactura(metodo, idDocumento, clienteActual);
+                itemsVenta.clear();
+                actualizarTotales();
+                clienteActual = null;
+                lblClienteInfo.setText("Sin cliente seleccionado");
+                lblClienteInfo.setTextFill(Color.GRAY);
+                txtBuscarCliente.clear();
+                cargarProductos(""); // refrescar stock visible
+
             } catch (Exception ex) {
-                error("Error al registrar la venta: " + ex.getMessage());
+                ex.printStackTrace();
+                new Alert(Alert.AlertType.ERROR,
+                        "Error al registrar la venta: " + ex.getClass().getSimpleName()
+                                + " - " + ex.getMessage(),
+                        ButtonType.OK).showAndWait();
             }
         });
     }
@@ -591,25 +619,30 @@ public class VentasPosView {
         sb.append("===========================================\n");
         sb.append("          TECHZONE  -  FACTURA\n");
         sb.append("===========================================\n");
-        sb.append(String.format("  N Documento : %d%n", idDocumento));
-        sb.append(String.format("  Fecha       : %s%n",
-                LocalDateTime.now().format(FMT)));
-        sb.append(String.format("  Metodo pago : %s%n", metodoPago));
+        sb.append("  N Documento  : ").append(idDocumento).append("\n");
+        sb.append("  Fecha        : ")
+                .append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")))
+                .append("\n");
+        sb.append("  Metodo pago  : ").append(metodoPago).append("\n");
+        sb.append("  Cliente      : ").append(cliente.getNombre()).append(" ")
+                .append(cliente.getApellido()).append("\n");
+        sb.append("  ID Cliente   : ").append(cliente.getId()).append("\n");
         sb.append("-------------------------------------------\n");
-        sb.append(String.format("  %-28s %6s %12s%n", "PRODUCTO", "CANT", "SUBTOTAL"));
+        sb.append("  PRODUCTO                     CANT    SUBTOTAL\n");
         sb.append("-------------------------------------------\n");
 
-        for (ItemVenta item : items) {
-            sb.append(String.format("  %-28s %6d %12,.0f%n",
-                    truncar(item.getNombre(), 28),
-                    item.getCantidad(),
-                    item.getPrecio() * item.getCantidad()));
+        for (ItemVenta item : itemsVenta) {
+            String nombre = padRight(truncar(item.getNombre(), 28), 28);
+            String cantidad = String.format("%6d", item.getCantidad());
+            String subtotal = padLeft(formatPesos(item.getPrecio() * item.getCantidad()), 12);
+            sb.append("  ").append(nombre).append(" ")
+                    .append(cantidad).append(" ").append(subtotal).append("\n");
         }
 
         sb.append("-------------------------------------------\n");
-        sb.append(String.format("  Subtotal  : %s%n", subtotal));
-        sb.append(String.format("  IVA (19%%) : %s%n", iva));
-        sb.append(String.format("  TOTAL     : %s%n", total));
+        sb.append("  Subtotal  : ").append(lblSubtotal.getText()).append("\n");
+        sb.append("  IVA(19%) : ").append(lblIva.getText()).append("\n");
+        sb.append("  TOTAL     : ").append(lblTotal.getText()).append("\n");
         sb.append("===========================================\n");
         sb.append("   Gracias por tu compra en TechZone!\n");
 
@@ -697,7 +730,7 @@ public class VentasPosView {
             @Override
             protected void updateItem(Double v, boolean empty) {
                 super.updateItem(v, empty);
-                setText(empty || v == null ? null : String.format("$%,.0f", v));
+                setText(empty || v == null ? null : formatPesos(v));
             }
         };
     }
